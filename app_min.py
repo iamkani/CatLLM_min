@@ -15,16 +15,15 @@ with st.expander("What is this?", expanded=False):
     )
 
 def minimal_model_reply(user_text: str, history: list[dict]) -> str:
-    """Try OpenAI ChatCompletion; on error, fall back to echo."""
-    # Attempt to use OpenAI if available
+    """Try OpenAI Chat Completions; on error, fall back to echo."""
     try:
-        from openai import OpenAI  # type: ignore
+        from openai import OpenAI  # requires openai>=1.0
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY not set")
         client = OpenAI(api_key=api_key)
 
-        # Build a short message history to keep tokens low
+        # Keep history short to minimize tokens
         msgs = [{"role": "system", "content": "You are a concise, helpful assistant."}]
         for m in history[-6:]:
             role = m.get("role", "user")
@@ -40,7 +39,6 @@ def minimal_model_reply(user_text: str, history: list[dict]) -> str:
         )
         return resp.choices[0].message.content or "(no content)"
     except Exception:
-        # Minimal fallback so the UI is usable without network or deps
         return f"(minimal echo) {user_text}"
 
 if "messages" not in st.session_state:
@@ -52,7 +50,8 @@ with st.sidebar:
     st.toggle("Stream responses (visual only)", value=True, key="stream_vis")
     if st.button("Clear chat"):
         st.session_state.messages = []
-        st.experimental_rerun()
+        # Streamlit 1.51 uses st.rerun()
+        st.rerun()
     st.divider()
     st.markdown("**Environment checks**")
     st.write("OPENAI_API_KEY set:", bool(os.getenv("OPENAI_API_KEY")))
@@ -70,18 +69,15 @@ for msg in st.session_state.messages:
 # Input
 prompt = st.chat_input("Type your message…")
 if prompt:
-    # Display user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Get assistant reply
     with st.chat_message("assistant"):
         with st.spinner("Thinking…"):
             reply = minimal_model_reply(prompt, st.session_state.messages)
             st.markdown(reply)
 
-    # Save assistant message
     st.session_state.messages.append({"role": "assistant", "content": reply})
 
 st.markdown("---")
