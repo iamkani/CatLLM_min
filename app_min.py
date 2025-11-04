@@ -4,7 +4,7 @@ import io
 import math
 import re
 from collections import Counter
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 import streamlit as st
 import pandas as pd
@@ -27,7 +27,6 @@ def has_pkg(name: str) -> bool:
 HAS_OPENAI = has_pkg("openai")
 HAS_PYPDF = has_pkg("pypdf")
 HAS_DOCX = has_pkg("docx")  # python-docx
-# Excel engines are optional; pandas may require openpyxl/xlrd for certain formats.
 HAS_OPENPYXL = has_pkg("openpyxl")
 HAS_XLRD = has_pkg("xlrd")
 
@@ -36,10 +35,10 @@ HAS_XLRD = has_pkg("xlrd")
 # ------------------------
 def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: List[str]) -> str:
     """Try OpenAI Chat Completions; on error, fall back to local heuristic answer with quoted snippets."""
-    preface = """"""
+    preface = ""
     if context_chunks:
         ctx_joined = "\n\n---\n".join(context_chunks[:4])
-        preface = f"Use the following context to answer:\n\n{ctx_joined}\n\n"
+        preface = f"Use the following context to answer (quote relevant lines and sources):\n\n{ctx_joined}\n\n"
 
     try:
         from openai import OpenAI  # requires openai>=1.0
@@ -49,7 +48,7 @@ def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: Lis
         client = OpenAI(api_key=api_key)
 
         msgs = [
-            {"role": "system", "content": "You are a concise, helpful assistant. Cite relevant snippets from the provided context; if unsure, say so."},
+            {"role": "system", "content": "You are a concise, helpful assistant. Prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."},
         ]
         # keep recent turns
         for m in history[-6:]:
@@ -66,7 +65,7 @@ def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: Lis
         )
         return resp.choices[0].message.content or "(no content)"
     except Exception:
-        # Local fallback: produce a simple answer by echoing the most relevant snippets.
+        # Local fallback: surface best snippets
         if context_chunks:
             snippets = "\n\n---\n".join(context_chunks[:3])
             return f"(local heuristic)\nTop snippets:\n\n{snippets}\n\nYour question: {user_text}"
@@ -78,8 +77,8 @@ def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: Lis
 _STOPWORDS = set(("a an and the of to in is it that this for on with as at by from be are was were or if then so such via into up out over under within without about between across not no yes you your yours we us our they their i me my mine he she him her his hers its who whom which what when where why how been being do does did done can could should would may might will shall just only also etc").split())
 
 def normalize_text(s: str) -> str:
-    s = s.replace('\x00', '')
-    s = re.sub(r'\s+', ' ', s)
+    s = s.replace('\\x00', '')
+    s = re.sub(r'\\s+', ' ', s)
     return s.strip()
 
 def tokenize(s: str) -> List[str]:
@@ -113,44 +112,43 @@ def top_chunks(query: str, chunks: List[str], k: int = 5) -> List[str]:
     return [c for s, c in scored if s > 0][:k]
 
 # ------------------------
-# Extraction for uploads
+# Extraction for uploads + source-aware chunking
 # ------------------------
-def extract_text_from_upload(file) -> Tuple[str, str]:
-    """Return (text, info_str). If non-text tabular, also returns a compact CSV preview as text."""
+def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
+    """Return (text, info_str, meta). Meta may include 'type', 'pages' (list of page texts), or 'df'."""
     name = file.name
     suffix = name.split(".")[-1].lower()
 
     try:
         if suffix in {"txt", "md", "log"}:
             data = file.read().decode("utf-8", errors="ignore")
-            return normalize_text(data), f"{name} (plain text)"
+            return normalize_text(data), f"{name} (plain text)", {"type": "text"}
 
         if suffix in {"csv"}:
             df = pd.read_csv(file)
             preview = df.to_csv(index=False)
-            return normalize_text(preview), f"{name} (CSV {df.shape[0]} rows × {df.shape[1]} cols)"
+            return normalize_text(preview), f"{name} (CSV {df.shape[0]} rows × {df.shape[1]} cols)", {"type": "csv", "df": df}
 
         if suffix in {"xlsx", "xls"}:
-            # Try pandas; may require openpyxl/xlrd
             try:
                 df = pd.read_excel(file)  # engine auto
                 preview = df.to_csv(index=False)
-                return normalize_text(preview), f"{name} (Excel {df.shape[0]} rows × {df.shape[1]} cols)"
+                return normalize_text(preview), f"{name} (Excel {df.shape[0]} rows × {df.shape[1]} cols)", {"type": "excel", "df": df}
             except Exception as e:
-                return "", f"{name} (Excel) could not be parsed: {e}. Install openpyxl/xlrd."
+                return "", f"{name} (Excel) could not be parsed: {e}. Install openpyxl/xlrd.", {"type": "excel_error"}
 
         if suffix in {"docx"}:
             if not HAS_DOCX:
-                return "", f"{name} (DOCX) requires 'python-docx' to extract text."
+                return "", f"{name} (DOCX) requires 'python-docx' to extract text.", {"type": "docx_error"}
             from docx import Document  # type: ignore
             bio = io.BytesIO(file.read())
             doc = Document(bio)
-            text = "\n".join(p.text for p in doc.paragraphs)
-            return normalize_text(text), f"{name} (DOCX paragraphs: {len(doc.paragraphs)})"
+            text = "\\n".join(p.text for p in doc.paragraphs)
+            return normalize_text(text), f"{name} (DOCX paragraphs: {len(doc.paragraphs)})", {"type": "docx"}
 
         if suffix in {"pdf"}:
             if not HAS_PYPDF:
-                return "", f"{name} (PDF) requires 'pypdf' to extract text."
+                return "", f"{name} (PDF) requires 'pypdf' to extract text.", {"type": "pdf_error"}
             from pypdf import PdfReader  # type: ignore
             bio = io.BytesIO(file.read())
             reader = PdfReader(bio)
@@ -160,13 +158,37 @@ def extract_text_from_upload(file) -> Tuple[str, str]:
                     pages.append(page.extract_text() or "")
                 except Exception:
                     pages.append("")
-            text = "\n".join(pages)
-            return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})"
+            text = "\\n".join(pages)
+            return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})", {"type": "pdf", "pages": pages}
 
-        return "", f"{name}: unsupported file type '{suffix}'."
+        return "", f"{name}: unsupported file type '{suffix}'.", {"type": "unsupported"}
 
     except Exception as e:
-        return "", f"{name}: error extracting text: {e}"
+        return "", f"{name}: error extracting text: {e}", {"type": "error"}
+
+def build_source_marked_chunks(name: str, meta: Dict, text: str) -> List[str]:
+    t = meta.get("type", "text")
+    # PDF: chunk by page for clear markers
+    if t == "pdf" and meta.get("pages") is not None:
+        out = []
+        for i, pg in enumerate(meta["pages"], start=1):
+            for c in chunk_text(pg, chunk_chars=1200, overlap=120):
+                out.append(f"[{name} | pdf | page {i}] \n{c}")
+        return out
+    # CSV/Excel: chunk by row windows for clear row ranges
+    if t in {"csv", "excel"} and meta.get("df") is not None:
+        df: pd.DataFrame = meta["df"]
+        # windows of rows
+        window = 40
+        out = []
+        for start in range(0, len(df), window):
+            end = min(len(df), start + window)
+            block_csv = df.iloc[start:end].to_csv(index=False)
+            for c in chunk_text(block_csv, chunk_chars=1600, overlap=0):
+                out.append(f"[{name} | {t} | rows {start+1}–{end}] \n{c}")
+        return out
+    # DOCX/TXT/others: normal chunking with filename marker
+    return [f"[{name} | {t}] \n{c}" for c in chunk_text(text, chunk_chars=1400, overlap=200)]
 
 # ------------------------
 # Session state
@@ -174,7 +196,8 @@ def extract_text_from_upload(file) -> Tuple[str, str]:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "docs" not in st.session_state:
-    st.session_state.docs = []  # list of dict: {name, meta, text, chunks}
+    # each: {name, meta, text, chunks, type, preview_df?}
+    st.session_state.docs = []
 if "all_chunks" not in st.session_state:
     st.session_state.all_chunks = []
 
@@ -184,9 +207,16 @@ if "all_chunks" not in st.session_state:
 with st.sidebar:
     st.header("Settings")
     st.toggle("Stream responses (visual only)", value=True, key="stream_vis")
-    if st.button("Clear chat"):
-        st.session_state.messages = []
-        st.rerun()
+    colA, colB = st.columns(2)
+    with colA:
+        if st.button("Clear chat", key="btn_clear_chat"):
+            st.session_state.messages = []
+            st.rerun()
+    with colB:
+        if st.button("Clear documents", key="btn_clear_docs"):
+            st.session_state.docs = []
+            st.session_state.all_chunks = []
+            st.rerun()
 
     st.divider()
     st.header("Environment")
@@ -200,40 +230,51 @@ st.markdown("### 📎 Add documents")
 uploads = st.file_uploader(
     "Drop files here (pdf, csv, xlsx, xls, docx, txt) — multiple allowed",
     type=["pdf", "csv", "xlsx", "xls", "docx", "txt"],
-    accept_multiple_files=True
+    accept_multiple_files=True,
+    key="uploader_docs"
 )
 if uploads:
     for f in uploads:
-        text, info = extract_text_from_upload(f)
+        text, info, meta = extract_text_from_upload(f)
         if text:
-            chunks = chunk_text(text, chunk_chars=1400, overlap=200)
-            st.session_state.docs.append({"name": f.name, "meta": info, "text": text, "chunks": chunks})
-            st.session_state.all_chunks.extend([f"[{f.name}] " + c for c in chunks])
+            chunks = build_source_marked_chunks(f.name, meta, text)
+            entry = {"name": f.name, "meta": info, "text": text, "chunks": chunks, "type": meta.get("type", "text")}
+            # Store small preview dataframe for CSV/Excel
+            if meta.get("df") is not None:
+                entry["df_preview"] = meta["df"].head(50)  # keep small
+            st.session_state.docs.append(entry)
+            st.session_state.all_chunks.extend(chunks)
             st.success(f"Added: {info} (chunks: {len(chunks)})")
         else:
             st.warning(f"Skipped: {info}")
 
-# Show current docs
+# Show current docs with previews
 if st.session_state.docs:
     st.markdown("#### 📚 Loaded documents")
-    for d in st.session_state.docs:
-        with st.expander(f"{d['name']} — {d['meta']}"):
-            st.text_area("Extracted text (preview)", d["text"][:5000], height=180)
+    for i, d in enumerate(st.session_state.docs):
+        with st.expander(f"{d['name']} — {d['meta']}", expanded=False):
+            # For tabular, show table preview
+            if d.get("df_preview") is not None:
+                st.markdown("**Table preview (first 50 rows):**")
+                st.dataframe(d["df_preview"], use_container_width=True, hide_index=True, key=f"dfprev_{i}")
+            # Always show text preview
+            st.text_area("Extracted text (preview)", d["text"][:5000], height=180, key=f"preview_{i}_{d['name']}")
+            st.caption("Source markers are added to retrieved snippets, e.g., [filename | type | page N] or [filename | type | rows i–j].")
 
 # Summarize all docs (quick, token-safe)
 if st.session_state.docs:
-    if st.button("🧠 Summarize loaded documents"):
+    if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
         context = []
         for d in st.session_state.docs:
             sample = d["text"][:1500]
             meta = d["meta"]
-            context.append(f"{d['name']} — {meta}\n{sample}")
+            context.append(f"{d['name']} — {meta}\\n{sample}")
         # Use model if available, else local word frequency
         if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
             try:
                 from openai import OpenAI
                 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                prompt = "Summarize the following documents in bullet points. Keep it concise and group by filename.\n\n" + "\n\n---\n\n".join(context)
+                prompt = "Summarize the following documents in bullet points. Keep it concise and group by filename. Quote key lines with [source markers].\\n\\n" + "\\n\\n---\\n\\n".join(context)
                 resp = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
@@ -246,29 +287,29 @@ if st.session_state.docs:
             except Exception as e:
                 st.error(f"Model summary failed, falling back to local: {e}")
                 # Fall back
-                agg = "### Local summary\n"
+                agg = "### Local summary\\n"
                 for d in st.session_state.docs:
                     toks = tokenize(d["text"])
                     common = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\n"
+                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\\n"
                 st.markdown(agg)
         else:
-            agg = "### Local summary\n"
+            agg = "### Local summary\\n"
             for d in st.session_state.docs:
                 toks = tokenize(d["text"])
                 common = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\n"
+                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\\n"
             st.markdown(agg)
 
 st.markdown("---")
 
 # Render chat history
-for msg in st.session_state.messages:
+for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 # Input with lightweight retrieval augmentation
-prompt = st.chat_input("Ask a question about the uploaded docs—or chat normally…")
+prompt = st.chat_input("Ask a question about the uploaded docs—or chat normally…", key="chat_input")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
