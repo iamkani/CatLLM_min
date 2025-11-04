@@ -15,7 +15,7 @@ with st.expander("What is this?", expanded=False):
     )
 
 def minimal_model_reply(user_text: str, history: list[dict]) -> str:
-    \"\"\"Try OpenAI ChatCompletion; on error, fall back to echo.\"\"\"
+    """Try OpenAI ChatCompletion; on error, fall back to echo."""
     # Attempt to use OpenAI if available
     try:
         from openai import OpenAI  # type: ignore
