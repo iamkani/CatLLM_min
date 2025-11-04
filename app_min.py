@@ -1,10 +1,9 @@
-
 import os
 import io
 import math
 import re
 from collections import Counter
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 
 import streamlit as st
 import pandas as pd
@@ -77,8 +76,8 @@ def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: Lis
 _STOPWORDS = set(("a an and the of to in is it that this for on with as at by from be are was were or if then so such via into up out over under within without about between across not no yes you your yours we us our they their i me my mine he she him her his hers its who whom which what when where why how been being do does did done can could should would may might will shall just only also etc").split())
 
 def normalize_text(s: str) -> str:
-    s = s.replace('\\x00', '')
-    s = re.sub(r'\\s+', ' ', s)
+    s = s.replace('\x00', '')
+    s = re.sub(r'\s+', ' ', s)
     return s.strip()
 
 def tokenize(s: str) -> List[str]:
@@ -143,7 +142,7 @@ def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
             from docx import Document  # type: ignore
             bio = io.BytesIO(file.read())
             doc = Document(bio)
-            text = "\\n".join(p.text for p in doc.paragraphs)
+            text = "\n".join(p.text for p in doc.paragraphs)
             return normalize_text(text), f"{name} (DOCX paragraphs: {len(doc.paragraphs)})", {"type": "docx"}
 
         if suffix in {"pdf"}:
@@ -158,7 +157,7 @@ def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
                     pages.append(page.extract_text() or "")
                 except Exception:
                     pages.append("")
-            text = "\\n".join(pages)
+            text = "\n".join(pages)
             return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})", {"type": "pdf", "pages": pages}
 
         return "", f"{name}: unsupported file type '{suffix}'.", {"type": "unsupported"}
@@ -178,7 +177,6 @@ def build_source_marked_chunks(name: str, meta: Dict, text: str) -> List[str]:
     # CSV/Excel: chunk by row windows for clear row ranges
     if t in {"csv", "excel"} and meta.get("df") is not None:
         df: pd.DataFrame = meta["df"]
-        # windows of rows
         window = 40
         out = []
         for start in range(0, len(df), window):
@@ -196,35 +194,20 @@ def build_source_marked_chunks(name: str, meta: Dict, text: str) -> List[str]:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "docs" not in st.session_state:
-    # each: {name, meta, text, chunks, type, preview_df?}
     st.session_state.docs = []
 if "all_chunks" not in st.session_state:
     st.session_state.all_chunks = []
 
 # ------------------------
-# Sidebar controls
+# Controls (top-level, not sidebar)
 # ------------------------
-with st.sidebar:
-    st.header("Settings")
+colA, colB = st.columns([1, 6])
+with colA:
+    if st.button("Clear chat", key="btn_clear_chat"):
+        st.session_state.messages = []
+        st.rerun()
+with colB:
     st.toggle("Stream responses (visual only)", value=True, key="stream_vis")
-    colA, colB = st.columns(2)
-    with colA:
-        if st.button("Clear chat", key="btn_clear_chat"):
-            st.session_state.messages = []
-            st.rerun()
-    with colB:
-        if st.button("Clear documents", key="btn_clear_docs"):
-            st.session_state.docs = []
-            st.session_state.all_chunks = []
-            st.rerun()
-
-    st.divider()
-    st.header("Environment")
-    st.write("OPENAI_API_KEY set:", bool(os.getenv("OPENAI_API_KEY")))
-    st.write("`openai` package:", "available" if HAS_OPENAI else "missing")
-    st.write("PDF text (`pypdf`):", "available" if HAS_PYPDF else "missing")
-    st.write("DOCX text (`python-docx`):", "available" if HAS_DOCX else "missing")
-    st.write("Excel engines:", ("openpyxl " if HAS_OPENPYXL else "") + ("xlrd" if HAS_XLRD else "") or "none")
 
 st.markdown("### 📎 Add documents")
 uploads = st.file_uploader(
@@ -233,15 +216,22 @@ uploads = st.file_uploader(
     accept_multiple_files=True,
     key="uploader_docs"
 )
+
+# NEW: Clear documents button directly under uploader
+if st.button("Clear documents", key="btn_clear_docs_top"):
+    st.session_state.docs = []
+    st.session_state.all_chunks = []
+    st.rerun()
+
+# Process uploads
 if uploads:
     for f in uploads:
         text, info, meta = extract_text_from_upload(f)
         if text:
             chunks = build_source_marked_chunks(f.name, meta, text)
             entry = {"name": f.name, "meta": info, "text": text, "chunks": chunks, "type": meta.get("type", "text")}
-            # Store small preview dataframe for CSV/Excel
             if meta.get("df") is not None:
-                entry["df_preview"] = meta["df"].head(50)  # keep small
+                entry["df_preview"] = meta["df"].head(50)
             st.session_state.docs.append(entry)
             st.session_state.all_chunks.extend(chunks)
             st.success(f"Added: {info} (chunks: {len(chunks)})")
@@ -253,28 +243,25 @@ if st.session_state.docs:
     st.markdown("#### 📚 Loaded documents")
     for i, d in enumerate(st.session_state.docs):
         with st.expander(f"{d['name']} — {d['meta']}", expanded=False):
-            # For tabular, show table preview
             if d.get("df_preview") is not None:
                 st.markdown("**Table preview (first 50 rows):**")
                 st.dataframe(d["df_preview"], use_container_width=True, hide_index=True, key=f"dfprev_{i}")
-            # Always show text preview
             st.text_area("Extracted text (preview)", d["text"][:5000], height=180, key=f"preview_{i}_{d['name']}")
             st.caption("Source markers are added to retrieved snippets, e.g., [filename | type | page N] or [filename | type | rows i–j].")
 
-# Summarize all docs (quick, token-safe)
+# Summarize all docs
 if st.session_state.docs:
     if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
         context = []
         for d in st.session_state.docs:
             sample = d["text"][:1500]
             meta = d["meta"]
-            context.append(f"{d['name']} — {meta}\\n{sample}")
-        # Use model if available, else local word frequency
+            context.append(f"{d['name']} — {meta}\n{sample}")
         if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
             try:
                 from openai import OpenAI
                 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                prompt = "Summarize the following documents in bullet points. Keep it concise and group by filename. Quote key lines with [source markers].\\n\\n" + "\\n\\n---\\n\\n".join(context)
+                prompt = "Summarize the following documents in bullet points. Keep it concise and group by filename. Quote key lines with [source markers].\n\n" + "\n\n---\n\n".join(context)
                 resp = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
@@ -286,19 +273,18 @@ if st.session_state.docs:
                 st.markdown(resp.choices[0].message.content or "(no content)")
             except Exception as e:
                 st.error(f"Model summary failed, falling back to local: {e}")
-                # Fall back
-                agg = "### Local summary\\n"
+                agg = "### Local summary\n"
                 for d in st.session_state.docs:
                     toks = tokenize(d["text"])
                     common = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\\n"
+                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\n"
                 st.markdown(agg)
         else:
-            agg = "### Local summary\\n"
+            agg = "### Local summary\n"
             for d in st.session_state.docs:
                 toks = tokenize(d["text"])
                 common = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\\n"
+                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\n"
             st.markdown(agg)
 
 st.markdown("---")
@@ -315,7 +301,6 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Retrieve top chunks
     chunks = st.session_state.all_chunks if st.session_state.all_chunks else []
     ctx = top_chunks(prompt, chunks, k=5) if chunks else []
 
