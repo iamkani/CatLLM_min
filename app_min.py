@@ -8,8 +8,13 @@ from typing import List, Dict, Tuple
 import streamlit as st
 import pandas as pd
 
+from prompts import get_fewshots_for_role
+
 # Configure the page early before any UI is drawn
 st.set_page_config(page_title="CatLLM — Minimal (Docs)", page_icon="🐾", layout="wide")
+
+FEWSHOT_ENABLED = os.getenv("FEWSHOT_ENABLED", "1") not in {"0", "false", "False"}
+FEWSHOT_PAIRS = int(os.getenv("FEWSHOT_PAIRS", "2"))  # number of user/assistant pairs (2–3 is usually enough)
 
 # ------------------------
 # Role definitions & credentials
@@ -123,22 +128,6 @@ def minimal_model_reply(
     context_chunks: List[str],
     role_name: str = None,
 ) -> str:
-    """Invoke OpenAI Chat Completions with role‑aware system prompts.
-
-    If an error occurs (e.g. model not available or API key missing), a local
-    heuristic is used to surface the most relevant context snippets. The
-    ``role_name`` parameter determines which system prompt from
-    ``ROLE_SYSTEM_MESSAGES`` is used; if not provided or unknown, the
-    ``Root`` prompt is used.
-
-    Args:
-        user_text: The user's query.
-        history: A list of previous messages, each with ``role`` and ``content``.
-        context_chunks: A list of context strings retrieved from documents.
-        role_name: The current user's role; selects the system prompt.
-    Returns:
-        A string reply from the model or the fallback heuristic.
-    """
     # Build a preface that embeds retrieved context (if any)
     preface = ""
     if context_chunks:
@@ -152,6 +141,14 @@ def minimal_model_reply(
     # Determine system prompt based on role
     role_canonical = normalize_role(role_name)
     system_prompt = ROLE_SYSTEM_MESSAGES.get(role_canonical, ROLE_SYSTEM_MESSAGES["Root"])
+
+    # Few-shots (role-grounded)
+    fewshots = get_fewshots_for_role(role_canonical) if FEWSHOT_ENABLED else []
+    max_msgs = max(0, 2 * FEWSHOT_PAIRS)   # keep full user/assistant pairs
+    fewshots = fewshots[:max_msgs]
+    if len(fewshots) % 2 == 1:
+        fewshots = fewshots[:-1]
+
     try:
         from openai import OpenAI  # type: ignore
         api_key = os.getenv("OPENAI_API_KEY")
@@ -159,17 +156,16 @@ def minimal_model_reply(
             raise RuntimeError("OPENAI_API_KEY not set")
         client = OpenAI(api_key=api_key)
 
-        # Build the message list: start with the role‑specific system prompt
-        msgs = [
-            {"role": "system", "content": system_prompt},
-        ]
-        # Keep recent conversation turns (last 6) for context
+        # Build the message list (system → few-shots → recent history → current user)
+        msgs = [{"role": "system", "content": system_prompt}]
+        msgs += fewshots
+
         for m in history[-6:]:
-            role = m.get("role", "user")
-            content = m.get("content", "")
-            if role in {"user", "assistant"} and content:
-                msgs.append({"role": role, "content": content})
-        # Append the current query with context preface
+            r = m.get("role", "user")
+            c = m.get("content", "")
+            if r in {"user", "assistant"} and c:
+                msgs.append({"role": r, "content": c})
+
         msgs.append({"role": "user", "content": preface + user_text})
 
         resp = client.chat.completions.create(
@@ -178,6 +174,7 @@ def minimal_model_reply(
             temperature=0.2,
         )
         return resp.choices[0].message.content or "(no content)"
+
     except Exception:
         # Local fallback: surface best snippets
         if context_chunks:
