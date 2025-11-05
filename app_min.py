@@ -27,12 +27,31 @@ SOURCE_MAP = {
 }
 
 import re
+
+DASHES = "\u2013\u2014"  # – — (en/em dashes)
+
 def linkify_labels(text: str) -> str:
+    # Match [ ... ] but skip if it's already a Markdown link ([...](...))
+    pattern = re.compile(r"\[([^\[\]]+?)\](?!\()", re.UNICODE)
+
     def _sub(m):
-        label = m.group(1)
-        url = SOURCE_MAP.get(label) or SOURCE_MAP.get(label.upper())
-        return f"[{label}]({url})" if url else f"[{label}]"
-    return re.sub(r"\[([A-Za-z0-9 .&/-]+)\]", _sub, text)
+        inside = m.group(1).strip()
+
+        # Normalize Unicode dashes to hyphen to simplify splitting
+        norm = inside.replace("\u2013", "-").replace("\u2014", "-")
+
+        # Cut off anything after a pipe, dash, or colon (keep the base label)
+        base = re.split(r"[|\-:]", norm, 1)[0].strip()
+
+        # If that base label maps to a URL, link the ORIGINAL bracket content
+        url = SOURCE_MAP.get(base) or SOURCE_MAP.get(base.upper())
+        if url:
+            return f"[{inside}]({url})"
+
+        # No mapping: leave as-is
+        return m.group(0)
+
+    return pattern.sub(_sub, text)
 
 # ------------------------
 # Role definitions & credentials
