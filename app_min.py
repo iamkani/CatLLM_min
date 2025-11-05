@@ -15,6 +15,7 @@ st.set_page_config(page_title="CatLLM — Minimal (Docs)", page_icon="🐾", lay
 
 FEWSHOT_ENABLED = os.getenv("FEWSHOT_ENABLED", "1") not in {"0", "false", "False"}
 FEWSHOT_PAIRS = int(os.getenv("FEWSHOT_PAIRS", "2"))
+
 SOURCE_MAP = {
     "USDA AMS": "https://www.ams.usda.gov/rules-regulations/research-promotion/beef",
     "USDA": "https://www.ams.usda.gov/",
@@ -26,32 +27,35 @@ SOURCE_MAP = {
     "ERS": "https://www.ers.usda.gov/topics/animal-products/cattle-beef/sector-at-a-glance/",
 }
 
-import re
+_BRACKETED = re.compile(r"\[([^\[\]]+?)\](?!\()", re.UNICODE)
+_LABELS = sorted(SOURCE_MAP.keys(), key=len, reverse=True)
+_ALT = "|".join(re.escape(k) for k in _LABELS)
+# avoid matching when already part of a markdown link "[...](...)" or "[...]" we already processed
+_BARE = re.compile(rf"(?<!\[)({_ALT})(?!\])", re.IGNORECASE | re.UNICODE)
 
-DASHES = "\u2013\u2014"  # – — (en/em dashes)
+def _lookup(urlmap, key: str) -> str | None:
+    # case-insensitive lookup
+    for k, v in urlmap.items():
+        if k.lower() == key.lower():
+            return v
+    return None
 
 def linkify_labels(text: str) -> str:
-    # Match [ ... ] but skip if it's already a Markdown link ([...](...))
-    pattern = re.compile(r"\[([^\[\]]+?)\](?!\()", re.UNICODE)
-
-    def _sub(m):
+    def _sub_bracketed(m):
         inside = m.group(1).strip()
-
-        # Normalize Unicode dashes to hyphen to simplify splitting
-        norm = inside.replace("\u2013", "-").replace("\u2014", "-")
-
-        # Cut off anything after a pipe, dash, or colon (keep the base label)
+        norm = inside.replace("\u2013", "-").replace("\u2014", "-")  # – —
         base = re.split(r"[|\-:]", norm, 1)[0].strip()
+        url = _lookup(SOURCE_MAP, base)
+        return f"[{inside}]({url})" if url else m.group(0)
+    out = _BRACKETED.sub(_sub_bracketed, text)
+    
+    def _sub_bare(m):
+        label = m.group(1)
+        url = _lookup(SOURCE_MAP, label)
+        return f"[{label}]({url})" if url else label
+    out = _BARE.sub(_sub_bare, out)
 
-        # If that base label maps to a URL, link the ORIGINAL bracket content
-        url = SOURCE_MAP.get(base) or SOURCE_MAP.get(base.upper())
-        if url:
-            return f"[{inside}]({url})"
-
-        # No mapping: leave as-is
-        return m.group(0)
-
-    return pattern.sub(_sub, text)
+    return out
 
 # ------------------------
 # Role definitions & credentials
