@@ -8,10 +8,85 @@ from typing import List, Dict, Tuple
 import streamlit as st
 import pandas as pd
 
+# Configure the page early before any UI is drawn
 st.set_page_config(page_title="CatLLM — Minimal (Docs)", page_icon="🐾", layout="wide")
 
-st.title("🐾 CatLLM — Minimal App + Document Chat")
-st.caption("Upload PDFs/CSVs/Excel/DOCX/TXT and chat with a lightweight retriever. No RAG infra required.")
+# ------------------------
+# Role definitions & credentials
+# ------------------------
+# Each role has a dedicated system prompt. These prompts provide grounding and
+# context when interacting with the OpenAI API. They emphasise grounded answers
+# and encourage the use of inline citations when sources are available.
+ROLE_SYSTEM_MESSAGES: Dict[str, str] = {
+    "Association Analyst": (
+        "You are an Association Analyst. "
+        "You specialize in interpreting association records, market trends, and industry benchmarks for cattle operations. "
+        "Provide data‑driven insights and analyses, and quote sources when relevant. "
+        "Prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."
+    ),
+    "Buyer / Feeder": (
+        "You are a Buyer / Feeder. "
+        "You focus on purchasing and feeding cattle, and provide guidance on feed strategies, pricing, and buying decisions. "
+        "Quote sources when relevant and prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."
+    ),
+    "Genetic Advisor": (
+        "You are a Genetic Advisor. "
+        "You specialize in cattle genetics, breeding strategies, and selection. "
+        "Provide advice grounded in genetics and science, quoting sources when relevant. "
+        "Prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."
+    ),
+    "Independent Rancher": (
+        "You are an Independent Rancher. "
+        "You run a cattle ranch independently, focusing on raising cattle, pasture management, and general operations. "
+        "Provide practical guidance and insights, quoting sources when relevant. "
+        "Prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."
+    ),
+    "Root": (
+        "You are the root user with full access. "
+        "Provide concise, helpful answers with inline quotes like: > snippet [source]. "
+        "If unsure, say so."
+    ),
+}
+
+def parse_credentials() -> Tuple[Tuple[str, str], Dict[str, Dict]]:
+    """Parse credentials for root and user roles from environment variables.
+
+    The CATLLM_ROOT_CREDS env var should be of the form "username:password".
+    The CATLLM_USERS env var should contain a comma‑separated list of
+    "username:password" pairs. A simple role mapping is applied based on the
+    username prefix (e.g. 'analyst' maps to 'Association Analyst').
+
+    Returns:
+        A tuple of (root_username, root_password) and a dictionary mapping
+        usernames to a dict with keys 'password' and 'role'.
+    """
+    root_raw = os.getenv("CATLLM_ROOT_CREDS", "root:root123")
+    root_parts = root_raw.split(":")
+    root_user = root_parts[0].strip() if root_parts else "root"
+    root_pw = root_parts[1].strip() if len(root_parts) > 1 else ""
+    users_raw = os.getenv(
+        "CATLLM_USERS",
+        "analyst:analyst123,buyer:buyer123,genetic:genetic123,rancher:rancher123",
+    )
+    users: Dict[str, Dict] = {}
+    role_map = {
+        "analyst": "Association Analyst",
+        "buyer": "Buyer / Feeder",
+        "feeder": "Buyer / Feeder",
+        "genetic": "Genetic Advisor",
+        "advisor": "Genetic Advisor",
+        "rancher": "Independent Rancher",
+    }
+    for item in users_raw.split(","):
+        item = item.strip()
+        if not item or ":" not in item:
+            continue
+        uname, pw = item.split(":", 1)
+        uname = uname.strip()
+        pw = pw.strip()
+        role = role_map.get(uname.lower(), uname.title())
+        users[uname] = {"password": pw, "role": role}
+    return (root_user, root_pw), users
 
 # ------------------------
 # Optional deps detection
@@ -32,29 +107,60 @@ HAS_XLRD = has_pkg("xlrd")
 # ------------------------
 # Minimal model call
 # ------------------------
-def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: List[str]) -> str:
-    """Try OpenAI Chat Completions; on error, fall back to local heuristic answer with quoted snippets."""
+def minimal_model_reply(
+    user_text: str,
+    history: List[Dict],
+    context_chunks: List[str],
+    role_name: str = None,
+) -> str:
+    """Invoke OpenAI Chat Completions with role‑aware system prompts.
+
+    If an error occurs (e.g. model not available or API key missing), a local
+    heuristic is used to surface the most relevant context snippets. The
+    ``role_name`` parameter determines which system prompt from
+    ``ROLE_SYSTEM_MESSAGES`` is used; if not provided or unknown, the
+    ``Root`` prompt is used.
+
+    Args:
+        user_text: The user's query.
+        history: A list of previous messages, each with ``role`` and ``content``.
+        context_chunks: A list of context strings retrieved from documents.
+        role_name: The current user's role; selects the system prompt.
+    Returns:
+        A string reply from the model or the fallback heuristic.
+    """
+    # Build a preface that embeds retrieved context (if any)
     preface = ""
     if context_chunks:
         ctx_joined = "\n\n---\n".join(context_chunks[:4])
-        preface = f"Use the following context to answer (quote relevant lines and sources):\n\n{ctx_joined}\n\n"
+        preface = (
+            "Use the following context to answer (quote relevant lines and sources):\n\n"
+            + ctx_joined
+            + "\n\n"
+        )
 
+    # Determine system prompt based on role
+    system_prompt = ROLE_SYSTEM_MESSAGES.get(
+        role_name or "Root", ROLE_SYSTEM_MESSAGES["Root"]
+    )
     try:
-        from openai import OpenAI  # requires openai>=1.0
+        from openai import OpenAI  # type: ignore
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY not set")
         client = OpenAI(api_key=api_key)
 
+        # Build the message list: start with the role‑specific system prompt
         msgs = [
-            {"role": "system", "content": "You are a concise, helpful assistant. Prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."},
+            {"role": "system", "content": system_prompt},
         ]
-        # keep recent turns
+        # Keep recent conversation turns (last 6) for context
         for m in history[-6:]:
             role = m.get("role", "user")
             content = m.get("content", "")
             if role in {"user", "assistant"} and content:
                 msgs.append({"role": role, "content": content})
+        # Append the current query with context preface
         msgs.append({"role": "user", "content": preface + user_text})
 
         resp = client.chat.completions.create(
@@ -67,17 +173,30 @@ def minimal_model_reply(user_text: str, history: List[Dict], context_chunks: Lis
         # Local fallback: surface best snippets
         if context_chunks:
             snippets = "\n\n---\n".join(context_chunks[:3])
-            return f"(local heuristic)\nTop snippets:\n\n{snippets}\n\nYour question: {user_text}"
+            return (
+                "(local heuristic)\nTop snippets:\n\n"
+                + snippets
+                + "\n\nYour question: "
+                + user_text
+            )
         return f"(minimal echo) {user_text}"
 
 # ------------------------
 # Simple text utils
 # ------------------------
-_STOPWORDS = set(("a an and the of to in is it that this for on with as at by from be are was were or if then so such via into up out over under within without about between across not no yes you your yours we us our they their i me my mine he she him her his hers its who whom which what when where why how been being do does did done can could should would may might will shall just only also etc").split())
+_STOPWORDS = set(
+    (
+        "a an and the of to in is it that this for on with as at by from be are was were or if "
+        "then so such via into up out over under within without about between across not no yes you "
+        "your yours we us our they their i me my mine he she him her his hers its who whom which what "
+        "when where why how been being do does did done can could should would may might will shall "
+        "just only also etc"
+    ).split()
+)
 
 def normalize_text(s: str) -> str:
-    s = s.replace('\x00', '')
-    s = re.sub(r'\s+', ' ', s)
+    s = s.replace("\x00", "")
+    s = re.sub(r"\s+", " ", s)
     return s.strip()
 
 def tokenize(s: str) -> List[str]:
@@ -87,7 +206,7 @@ def chunk_text(s: str, chunk_chars: int = 1200, overlap: int = 150) -> List[str]
     s = normalize_text(s)
     if len(s) <= chunk_chars:
         return [s]
-    chunks = []
+    chunks: List[str] = []
     start = 0
     while start < len(s):
         end = min(len(s), start + chunk_chars)
@@ -100,13 +219,13 @@ def chunk_text(s: str, chunk_chars: int = 1200, overlap: int = 150) -> List[str]
 def score_chunk(query: str, chunk: str) -> float:
     # Simple bag-of-words tf scoring
     q_tokens = tokenize(query)
-    if not q_tokens: 
+    if not q_tokens:
         return 0.0
     c_counts = Counter(tokenize(chunk))
     return sum(c_counts.get(t, 0) for t in set(q_tokens)) / (1 + math.log10(1 + len(chunk)))
 
 def top_chunks(query: str, chunks: List[str], k: int = 5) -> List[str]:
-    scored = [(score_chunk(query, c), c) for c in chunks]
+    scored: List[Tuple[float, str]] = [(score_chunk(query, c), c) for c in chunks]
     scored.sort(key=lambda x: x[0], reverse=True)
     return [c for s, c in scored if s > 0][:k]
 
@@ -114,7 +233,12 @@ def top_chunks(query: str, chunks: List[str], k: int = 5) -> List[str]:
 # Extraction for uploads + source-aware chunking
 # ------------------------
 def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
-    """Return (text, info_str, meta). Meta may include 'type', 'pages' (list of page texts), or 'df'."""
+    """Return (text, info_str, meta) for an uploaded file.
+
+    The ``meta`` dictionary may include 'type', 'pages' (list of page texts), or 'df' for
+    tabular data. The ``info_str`` gives a short description of the file. Unsupported
+    formats return an empty string and a descriptive message.
+    """
     name = file.name
     suffix = name.split(".")[-1].lower()
 
@@ -151,7 +275,7 @@ def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
             from pypdf import PdfReader  # type: ignore
             bio = io.BytesIO(file.read())
             reader = PdfReader(bio)
-            pages = []
+            pages: List[str] = []
             for page in reader.pages:
                 try:
                     pages.append(page.extract_text() or "")
@@ -165,11 +289,17 @@ def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
     except Exception as e:
         return "", f"{name}: error extracting text: {e}", {"type": "error"}
 
+
 def build_source_marked_chunks(name: str, meta: Dict, text: str) -> List[str]:
+    """Create source-marked text chunks for retrieval.
+
+    For PDFs, chunk by page and add page numbers; for CSV/Excel files, chunk
+    by row windows; for other types, normal text chunking with a filename marker.
+    """
     t = meta.get("type", "text")
     # PDF: chunk by page for clear markers
     if t == "pdf" and meta.get("pages") is not None:
-        out = []
+        out: List[str] = []
         for i, pg in enumerate(meta["pages"], start=1):
             for c in chunk_text(pg, chunk_chars=1200, overlap=120):
                 out.append(f"[{name} | pdf | page {i}] \n{c}")
@@ -178,7 +308,7 @@ def build_source_marked_chunks(name: str, meta: Dict, text: str) -> List[str]:
     if t in {"csv", "excel"} and meta.get("df") is not None:
         df: pd.DataFrame = meta["df"]
         window = 40
-        out = []
+        out: List[str] = []
         for start in range(0, len(df), window):
             end = min(len(df), start + window)
             block_csv = df.iloc[start:end].to_csv(index=False)
@@ -189,7 +319,7 @@ def build_source_marked_chunks(name: str, meta: Dict, text: str) -> List[str]:
     return [f"[{name} | {t}] \n{c}" for c in chunk_text(text, chunk_chars=1400, overlap=200)]
 
 # ------------------------
-# Session state
+# Session state and authentication
 # ------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -197,10 +327,55 @@ if "docs" not in st.session_state:
     st.session_state.docs = []
 if "all_chunks" not in st.session_state:
     st.session_state.all_chunks = []
+if "auth" not in st.session_state:
+    # Tracks whether the user is logged in, their username, and role
+    st.session_state.auth = {"is_authed": False, "username": None, "role": None}
+
+# Parse credentials on each run. Root credentials and users are derived from env vars.
+root_cred, user_creds = parse_credentials()
+
+# Authentication: if the user is not logged in, show a simple login form
+if not st.session_state.auth["is_authed"]:
+    st.title("🔐 Sign In")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Log in"):
+        # Check root credentials first
+        if username == root_cred[0] and password == root_cred[1]:
+            st.session_state.auth = {
+                "is_authed": True,
+                "username": username,
+                "role": "Root",
+            }
+            st.rerun()
+        # Then check user credentials
+        elif username in user_creds and user_creds[username]["password"] == password:
+            role_name = user_creds[username]["role"]
+            st.session_state.auth = {
+                "is_authed": True,
+                "username": username,
+                "role": role_name,
+            }
+            st.rerun()
+        else:
+            st.error("Invalid username or password")
+    # Halt execution of the rest of the app until authenticated
+    st.stop()
 
 # ------------------------
-# Controls (top-level, not sidebar)
+# UI controls (top-level, not sidebar)
 # ------------------------
+# Indicate which user is logged in and provide a logout mechanism
+st.info(f"Logged in as **{st.session_state.auth['username']}** ({st.session_state.auth['role']})")
+if st.button("Log out"):
+    # Reset authentication and clear session state
+    st.session_state.auth = {"is_authed": False, "username": None, "role": None}
+    st.session_state.messages = []
+    st.session_state.docs = []
+    st.session_state.all_chunks = []
+    st.rerun()
+
+# Primary controls for chat and streaming. These controls are displayed in columns.
 colA, colB = st.columns([1, 6])
 with colA:
     if st.button("Clear chat", key="btn_clear_chat"):
@@ -214,22 +389,28 @@ uploads = st.file_uploader(
     "Drop files here (pdf, csv, xlsx, xls, docx, txt) — multiple allowed",
     type=["pdf", "csv", "xlsx", "xls", "docx", "txt"],
     accept_multiple_files=True,
-    key="uploader_docs"
+    key="uploader_docs",
 )
 
-# NEW: Clear documents button directly under uploader
+# A button to clear all loaded documents directly under the uploader
 if st.button("Clear documents", key="btn_clear_docs_top"):
     st.session_state.docs = []
     st.session_state.all_chunks = []
     st.rerun()
 
-# Process uploads
+# Process newly uploaded files
 if uploads:
     for f in uploads:
         text, info, meta = extract_text_from_upload(f)
         if text:
             chunks = build_source_marked_chunks(f.name, meta, text)
-            entry = {"name": f.name, "meta": info, "text": text, "chunks": chunks, "type": meta.get("type", "text")}
+            entry: Dict = {
+                "name": f.name,
+                "meta": info,
+                "text": text,
+                "chunks": chunks,
+                "type": meta.get("type", "text"),
+            }
             if meta.get("df") is not None:
                 entry["df_preview"] = meta["df"].head(50)
             st.session_state.docs.append(entry)
@@ -238,30 +419,46 @@ if uploads:
         else:
             st.warning(f"Skipped: {info}")
 
-# Show current docs with previews
+# Display loaded documents with previews and optional table previews
 if st.session_state.docs:
     st.markdown("#### 📚 Loaded documents")
     for i, d in enumerate(st.session_state.docs):
         with st.expander(f"{d['name']} — {d['meta']}", expanded=False):
             if d.get("df_preview") is not None:
                 st.markdown("**Table preview (first 50 rows):**")
-                st.dataframe(d["df_preview"], use_container_width=True, hide_index=True, key=f"dfprev_{i}")
-            st.text_area("Extracted text (preview)", d["text"][:5000], height=180, key=f"preview_{i}_{d['name']}")
-            st.caption("Source markers are added to retrieved snippets, e.g., [filename | type | page N] or [filename | type | rows i–j].")
+                st.dataframe(
+                    d["df_preview"],
+                    use_container_width=True,
+                    hide_index=True,
+                    key=f"dfprev_{i}",
+                )
+            st.text_area(
+                "Extracted text (preview)",
+                d["text"][:5000],
+                height=180,
+                key=f"preview_{i}_{d['name']}",
+            )
+            st.caption(
+                "Source markers are added to retrieved snippets, e.g., [filename | type | page N] or [filename | type | rows i–j]."
+            )
 
-# Summarize all docs
+# Optional summarization across all loaded documents
 if st.session_state.docs:
     if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
-        context = []
+        context: List[str] = []
         for d in st.session_state.docs:
             sample = d["text"][:1500]
-            meta = d["meta"]
-            context.append(f"{d['name']} — {meta}\n{sample}")
+            meta_info = d["meta"]
+            context.append(f"{d['name']} — {meta_info}\n{sample}")
         if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
             try:
-                from openai import OpenAI
+                from openai import OpenAI  # type: ignore
                 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                prompt = "Summarize the following documents in bullet points. Keep it concise and group by filename. Quote key lines with [source markers].\n\n" + "\n\n---\n\n".join(context)
+                prompt = (
+                    "Summarize the following documents in bullet points. Keep it concise and group by filename. "
+                    "Quote key lines with [source markers].\n\n"
+                    + "\n\n---\n\n".join(context)
+                )
                 resp = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
@@ -276,17 +473,18 @@ if st.session_state.docs:
                 agg = "### Local summary\n"
                 for d in st.session_state.docs:
                     toks = tokenize(d["text"])
-                    common = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\n"
+                    common_terms = ", ".join(w for w, _ in Counter(toks).most_common(10))
+                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common_terms}\n"
                 st.markdown(agg)
         else:
             agg = "### Local summary\n"
             for d in st.session_state.docs:
                 toks = tokenize(d["text"])
-                common = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common}\n"
+                common_terms = ", ".join(w for w, _ in Counter(toks).most_common(10))
+                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common_terms}\n"
             st.markdown(agg)
 
+# Separator
 st.markdown("---")
 
 # Render chat history
@@ -294,7 +492,7 @@ for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Input with lightweight retrieval augmentation
+# Chat input with retrieval augmentation. The role_name is passed to the model function.
 prompt = st.chat_input("Ask a question about the uploaded docs—or chat normally…", key="chat_input")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -306,9 +504,15 @@ if prompt:
 
     with st.chat_message("assistant"):
         with st.spinner("Analyzing…"):
-            reply = minimal_model_reply(prompt, st.session_state.messages, ctx)
+            reply = minimal_model_reply(
+                prompt,
+                st.session_state.messages,
+                ctx,
+                role_name=st.session_state.auth.get("role"),
+            )
             st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
 
+# Footer tip
 st.caption("Tip: install optional extras for richer parsing: `pypdf`, `python-docx`, `openpyxl`.")
