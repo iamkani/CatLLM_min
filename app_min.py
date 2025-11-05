@@ -14,7 +14,24 @@ from prompts import get_fewshots_for_role
 st.set_page_config(page_title="CatLLM — Minimal (Docs)", page_icon="🐾", layout="wide")
 
 FEWSHOT_ENABLED = os.getenv("FEWSHOT_ENABLED", "1") not in {"0", "false", "False"}
-FEWSHOT_PAIRS = int(os.getenv("FEWSHOT_PAIRS", "2"))  # number of user/assistant pairs (2–3 is usually enough)
+FEWSHOT_PAIRS = int(os.getenv("FEWSHOT_PAIRS", "2"))
+
+SOURCE_MAP = {
+    "USDA AMS": "https://www.ams.usda.gov/rules-regulations/research-promotion/beef",
+    "USDA": "https://www.ams.usda.gov/rules-regulations/research-promotion/beef",
+    "GAO": "https://www.gao.gov/assets/gao-18-55r.pdf",
+    "FSIS": "https://www.fsis.usda.gov/inspection/compliance-guidance/labeling/claims-guidance",
+    "FoodSafety.gov": "https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures",
+    "AMS Grades": "https://www.ams.usda.gov/grades-standards/carcass-beef-grades-and-standards",
+}
+
+import re
+def linkify_labels(text: str) -> str:
+    def _sub(m):
+        label = m.group(1)
+        url = SOURCE_MAP.get(label) or SOURCE_MAP.get(label.upper())
+        return f"[{label}]({url})" if url else f"[{label}]"
+    return re.sub(r"\[([A-Za-z0-9 .&/-]+)\]", _sub, text)
 
 # ------------------------
 # Role definitions & credentials
@@ -516,6 +533,7 @@ if prompt:
                 ctx,
                 role_name=st.session_state.auth.get("role"),
             )
+            reply = linkify_labels(reply)
             st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
