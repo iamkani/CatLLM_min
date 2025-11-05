@@ -48,45 +48,55 @@ ROLE_SYSTEM_MESSAGES: Dict[str, str] = {
     ),
 }
 
-def parse_credentials() -> Tuple[Tuple[str, str], Dict[str, Dict]]:
-    """Parse credentials for root and user roles from environment variables.
+# Accept many role spellings; normalize to keys used in ROLE_SYSTEM_MESSAGES
+ROLE_ALIASES = {
+    # snake_case from env → UI label keys
+    "association_analyst": "Association Analyst",
+    "buyer_feeder": "Buyer / Feeder",
+    "genetic_advisor": "Genetic Advisor",
+    "independent_rancher": "Independent Rancher",
+    # fallbacks
+    "root": "Root",
+}
 
-    The CATLLM_ROOT_CREDS env var should be of the form "username:password".
-    The CATLLM_USERS env var should contain a comma‑separated list of
-    "username:password" pairs. A simple role mapping is applied based on the
-    username prefix (e.g. 'analyst' maps to 'Association Analyst').
+def normalize_role(role: str | None) -> str:
+    if not role:
+        return "Root"
+    r = role.strip().lower().replace("/", "_").replace(" ", "_")
+    return ROLE_ALIASES.get(r, ROLE_ALIASES.get("association_analyst"))
 
-    Returns:
-        A tuple of (root_username, root_password) and a dictionary mapping
-        usernames to a dict with keys 'password' and 'role'.
+def parse_credentials() -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
     """
-    root_raw = os.getenv("CATLLM_ROOT_CREDS", "root:root123")
-    root_parts = root_raw.split(":")
-    root_user = root_parts[0].strip() if root_parts else "root"
-    root_pw = root_parts[1].strip() if len(root_parts) > 1 else ""
-    users_raw = os.getenv(
-        "CATLLM_USERS",
-        "analyst:analyst123,buyer:buyer123,genetic:genetic123,rancher:rancher123",
-    )
-    users: Dict[str, Dict] = {}
-    role_map = {
-        "analyst": "Association Analyst",
-        "buyer": "Buyer / Feeder",
-        "feeder": "Buyer / Feeder",
-        "genetic": "Genetic Advisor",
-        "advisor": "Genetic Advisor",
-        "rancher": "Independent Rancher",
-    }
-    for item in users_raw.split(","):
-        item = item.strip()
-        if not item or ":" not in item:
+    Parse credentials from env:
+      CATLLM_ROOT_CREDS = "admin:supersecret,ops:opspass"      (pairs)
+      CATLLM_USERS      = "alexa:pw1:association_analyst,..."  (triplets)
+    Returns:
+      roots:  {username: password}
+      users:  {username: (password, normalized_role)}
+    """
+    # Roots: multiple username:password pairs
+    roots: Dict[str, str] = {}
+    for part in filter(None, [p.strip() for p in os.getenv("CATLLM_ROOT_CREDS", "").split(",")]):
+        if ":" in part:
+            u, pw = part.split(":", 1)
+            roots[u.strip()] = pw.strip()
+
+    # Users: username:password:role triplets (role is required in your env)
+    users: Dict[str, tuple[str, str]] = {}
+    for part in filter(None, [p.strip() for p in os.getenv("CATLLM_USERS", "").split(",")]):
+        bits = part.split(":")
+        if len(bits) != 3:
+            # ignore malformed entries
             continue
-        uname, pw = item.split(":", 1)
-        uname = uname.strip()
-        pw = pw.strip()
-        role = role_map.get(uname.lower(), uname.title())
-        users[uname] = {"password": pw, "role": role}
-    return (root_user, root_pw), users
+        u, pw, role = bits[0].strip(), bits[1].strip(), bits[2].strip()
+        users[u] = (pw, normalize_role(role))
+
+    # Demo defaults only if both empty
+    if not roots and not users:
+        roots = {"root": "root123"}
+        users = {"user": ("user123", normalize_role("association_analyst"))}
+
+    return roots, users
 
 # ------------------------
 # Optional deps detection
@@ -140,9 +150,8 @@ def minimal_model_reply(
         )
 
     # Determine system prompt based on role
-    system_prompt = ROLE_SYSTEM_MESSAGES.get(
-        role_name or "Root", ROLE_SYSTEM_MESSAGES["Root"]
-    )
+    role_canonical = normalize_role(role_name)
+    system_prompt = ROLE_SYSTEM_MESSAGES.get(role_canonical, ROLE_SYSTEM_MESSAGES["Root"])
     try:
         from openai import OpenAI  # type: ignore
         api_key = os.getenv("OPENAI_API_KEY")
@@ -164,7 +173,7 @@ def minimal_model_reply(
         msgs.append({"role": "user", "content": preface + user_text})
 
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
             messages=msgs,
             temperature=0.2,
         )
@@ -332,7 +341,7 @@ if "auth" not in st.session_state:
     st.session_state.auth = {"is_authed": False, "username": None, "role": None}
 
 # Parse credentials on each run. Root credentials and users are derived from env vars.
-root_cred, user_creds = parse_credentials()
+root_creds, user_creds = parse_credentials()
 
 # Authentication: if the user is not logged in, show a simple login form
 if not st.session_state.auth["is_authed"]:
@@ -340,17 +349,17 @@ if not st.session_state.auth["is_authed"]:
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Log in"):
-        # Check root credentials first
-        if username == root_cred[0] and password == root_cred[1]:
+        # Check root credentials (multiple roots supported)
+        if username in root_creds and root_creds[username] == password:
             st.session_state.auth = {
                 "is_authed": True,
                 "username": username,
                 "role": "Root",
             }
             st.rerun()
-        # Then check user credentials
-        elif username in user_creds and user_creds[username]["password"] == password:
-            role_name = user_creds[username]["role"]
+        # Check normal users (password, role) tuples
+        elif username in user_creds and user_creds[username][0] == password:
+            role_name = user_creds[username][1]
             st.session_state.auth = {
                 "is_authed": True,
                 "username": username,
@@ -460,7 +469,7 @@ if st.session_state.docs:
                     + "\n\n---\n\n".join(context)
                 )
                 resp = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
                     messages=[
                         {"role": "system", "content": "You are a concise technical summarizer."},
                         {"role": "user", "content": prompt},
