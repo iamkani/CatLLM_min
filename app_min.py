@@ -15,14 +15,15 @@ st.set_page_config(page_title="CatLLM — Minimal (Docs)", page_icon="🐾", lay
 
 FEWSHOT_ENABLED = os.getenv("FEWSHOT_ENABLED", "1") not in {"0", "false", "False"}
 FEWSHOT_PAIRS = int(os.getenv("FEWSHOT_PAIRS", "2"))
-
 SOURCE_MAP = {
     "USDA AMS": "https://www.ams.usda.gov/rules-regulations/research-promotion/beef",
-    "USDA": "https://www.ams.usda.gov/rules-regulations/research-promotion/beef",
+    "USDA": "https://www.ams.usda.gov/",
     "GAO": "https://www.gao.gov/assets/gao-18-55r.pdf",
     "FSIS": "https://www.fsis.usda.gov/inspection/compliance-guidance/labeling/claims-guidance",
     "FoodSafety.gov": "https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures",
     "AMS Grades": "https://www.ams.usda.gov/grades-standards/carcass-beef-grades-and-standards",
+    "NASS": "https://www.nass.usda.gov/Quick_Stats/",
+    "ERS": "https://www.ers.usda.gov/topics/animal-products/cattle-beef/sector-at-a-glance/",
 }
 
 import re
