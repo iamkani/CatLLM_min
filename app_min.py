@@ -2,6 +2,8 @@ import os
 import io
 import math
 import re
+import json, gzip
+from pathlib import Path
 from collections import Counter
 from typing import List, Dict, Tuple
 
@@ -27,6 +29,7 @@ SOURCE_MAP = {
     "ERS": "https://www.ers.usda.gov/topics/animal-products/cattle-beef/sector-at-a-glance/",
 }
 
+# ---------- linkify helpers ----------
 _BRACKETED = re.compile(r"\[([^\[\]]+?)\](?!\()", re.UNICODE)
 _LABELS = sorted(SOURCE_MAP.keys(), key=len, reverse=True)
 _ALT = "|".join(re.escape(k) for k in _LABELS)
@@ -48,7 +51,7 @@ def linkify_labels(text: str) -> str:
         url = _lookup(SOURCE_MAP, base)
         return f"[{inside}]({url})" if url else m.group(0)
     out = _BRACKETED.sub(_sub_bracketed, text)
-    
+
     def _sub_bare(m):
         label = m.group(1)
         url = _lookup(SOURCE_MAP, label)
@@ -57,17 +60,34 @@ def linkify_labels(text: str) -> str:
 
     return out
 
+# ---------- loader for prebuilt corpora (.json or .json.gz) ----------
+@st.cache_data(show_spinner=False)
+def load_json_list(path: str) -> list[str]:
+    """Load list[str] from .json or .json.gz. Returns [] if not found or invalid."""
+    p = Path(path)
+    if not p.exists():
+        gz = p.with_suffix(p.suffix + ".gz") if p.suffix != ".gz" else p
+        if gz.exists():
+            p = gz
+        else:
+            return []
+    try:
+        if p.suffix.endswith("gz"):
+            with gzip.open(p, "rt", encoding="utf-8") as f:
+                return json.load(f)
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception as e:
+        st.warning(f"Failed to load {p.name}: {e}")
+        return []
+
 # ------------------------
 # Role definitions & credentials
 # ------------------------
-# Each role has a dedicated system prompt. These prompts provide grounding and
-# context when interacting with the OpenAI API. They emphasise grounded answers
-# and encourage the use of inline citations when sources are available.
 ROLE_SYSTEM_MESSAGES: Dict[str, str] = {
     "Association Analyst": (
         "You are an Association Analyst. "
         "You specialize in interpreting association records, market trends, and industry benchmarks for cattle operations. "
-        "Provide data‑driven insights and analyses, and quote sources when relevant. "
+        "Provide data-driven insights and analyses, and quote sources when relevant. "
         "Prefer grounded answers with inline quotes like: > snippet [source]. If unsure, say so."
     ),
     "Buyer / Feeder": (
@@ -94,14 +114,11 @@ ROLE_SYSTEM_MESSAGES: Dict[str, str] = {
     ),
 }
 
-# Accept many role spellings; normalize to keys used in ROLE_SYSTEM_MESSAGES
 ROLE_ALIASES = {
-    # snake_case from env → UI label keys
     "association_analyst": "Association Analyst",
     "buyer_feeder": "Buyer / Feeder",
     "genetic_advisor": "Genetic Advisor",
     "independent_rancher": "Independent Rancher",
-    # fallbacks
     "root": "Root",
 }
 
@@ -120,24 +137,20 @@ def parse_credentials() -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
       roots:  {username: password}
       users:  {username: (password, normalized_role)}
     """
-    # Roots: multiple username:password pairs
     roots: Dict[str, str] = {}
     for part in filter(None, [p.strip() for p in os.getenv("CATLLM_ROOT_CREDS", "").split(",")]):
         if ":" in part:
             u, pw = part.split(":", 1)
             roots[u.strip()] = pw.strip()
 
-    # Users: username:password:role triplets (role is required in your env)
     users: Dict[str, tuple[str, str]] = {}
     for part in filter(None, [p.strip() for p in os.getenv("CATLLM_USERS", "").split(",")]):
         bits = part.split(":")
         if len(bits) != 3:
-            # ignore malformed entries
             continue
         u, pw, role = bits[0].strip(), bits[1].strip(), bits[2].strip()
         users[u] = (pw, normalize_role(role))
 
-    # Demo defaults only if both empty
     if not roots and not users:
         roots = {"root": "root123"}
         users = {"user": ("user123", normalize_role("association_analyst"))}
@@ -375,54 +388,55 @@ if "docs" not in st.session_state:
 if "all_chunks" not in st.session_state:
     st.session_state.all_chunks = []
 if "auth" not in st.session_state:
-    # Tracks whether the user is logged in, their username, and role
     st.session_state.auth = {"is_authed": False, "username": None, "role": None}
 
-# Parse credentials on each run. Root credentials and users are derived from env vars.
+# Load prebuilt corpora (priority: rag_store > rag_store_cluster3)
+if "stores" not in st.session_state:
+    primary = load_json_list("rag_store.json") or load_json_list("rag_store.json.gz")
+    secondary = load_json_list("rag_store_cluster3.json") or load_json_list("rag_store_cluster3.json.gz")
+    st.session_state.stores = {
+        "primary": primary,     # magazines / first corpus
+        "secondary": secondary  # Cluster 3 / second corpus
+    }
+
+# Optional status
+st.caption(
+    "Corpora loaded — "
+    f"primary: {len(st.session_state.stores['primary'])} chunks, "
+    f"secondary: {len(st.session_state.stores['secondary'])} chunks."
+)
+
+# Parse credentials on each run
 root_creds, user_creds = parse_credentials()
 
-# Authentication: if the user is not logged in, show a simple login form
+# Authentication
 if not st.session_state.auth["is_authed"]:
     st.title("🔐 Sign In")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Log in"):
-        # Check root credentials (multiple roots supported)
         if username in root_creds and root_creds[username] == password:
-            st.session_state.auth = {
-                "is_authed": True,
-                "username": username,
-                "role": "Root",
-            }
+            st.session_state.auth = {"is_authed": True, "username": username, "role": "Root"}
             st.rerun()
-        # Check normal users (password, role) tuples
         elif username in user_creds and user_creds[username][0] == password:
             role_name = user_creds[username][1]
-            st.session_state.auth = {
-                "is_authed": True,
-                "username": username,
-                "role": role_name,
-            }
+            st.session_state.auth = {"is_authed": True, "username": username, "role": role_name}
             st.rerun()
         else:
             st.error("Invalid username or password")
-    # Halt execution of the rest of the app until authenticated
     st.stop()
 
 # ------------------------
 # UI controls (top-level, not sidebar)
 # ------------------------
-# Indicate which user is logged in and provide a logout mechanism
 st.info(f"Logged in as **{st.session_state.auth['username']}** ({st.session_state.auth['role']})")
 if st.button("Log out"):
-    # Reset authentication and clear session state
     st.session_state.auth = {"is_authed": False, "username": None, "role": None}
     st.session_state.messages = []
     st.session_state.docs = []
     st.session_state.all_chunks = []
     st.rerun()
 
-# Primary controls for chat and streaming. These controls are displayed in columns.
 colA, colB = st.columns([1, 6])
 with colA:
     if st.button("Clear chat", key="btn_clear_chat"):
@@ -439,7 +453,6 @@ uploads = st.file_uploader(
     key="uploader_docs",
 )
 
-# A button to clear all loaded documents directly under the uploader
 if st.button("Clear documents", key="btn_clear_docs_top"):
     st.session_state.docs = []
     st.session_state.all_chunks = []
@@ -466,7 +479,7 @@ if uploads:
         else:
             st.warning(f"Skipped: {info}")
 
-# Display loaded documents with previews and optional table previews
+# Display loaded documents
 if st.session_state.docs:
     st.markdown("#### 📚 Loaded documents")
     for i, d in enumerate(st.session_state.docs):
@@ -489,7 +502,7 @@ if st.session_state.docs:
                 "Source markers are added to retrieved snippets, e.g., [filename | type | page N] or [filename | type | rows i–j]."
             )
 
-# Optional summarization across all loaded documents
+# Optional summarization
 if st.session_state.docs:
     if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
         context: List[str] = []
@@ -539,15 +552,32 @@ for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat input with retrieval augmentation. The role_name is passed to the model function.
+# Chat input with retrieval augmentation
 prompt = st.chat_input("Ask a question about the uploaded docs—or chat normally…", key="chat_input")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    chunks = st.session_state.all_chunks if st.session_state.all_chunks else []
-    ctx = top_chunks(prompt, chunks, k=5) if chunks else []
+    # PRIORITY SEARCH: uploads → primary (rag_store) → secondary (rag_store_cluster3)
+    K = 5
+    ctx: List[str] = []
+
+    upload_chunks = st.session_state.all_chunks or []
+    if upload_chunks:
+        ctx.extend(top_chunks(prompt, upload_chunks, k=K))
+
+    need = K - len(ctx)
+    if need > 0:
+        primary = st.session_state.stores.get("primary", [])
+        if primary:
+            ctx.extend(top_chunks(prompt, primary, k=need))
+
+    need = K - len(ctx)
+    if need > 0:
+        secondary = st.session_state.stores.get("secondary", [])
+        if secondary:
+            ctx.extend(top_chunks(prompt, secondary, k=need))
 
     with st.chat_message("assistant"):
         with st.spinner("Analyzing…"):
