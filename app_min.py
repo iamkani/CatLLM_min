@@ -183,6 +183,7 @@ def minimal_model_reply(
     role_name: str = None,
 ) -> str:
     # Build a preface that embeds retrieved context (if any)
+    ctx_joined = "\n\n---\n".join(context_chunks[:4])
     preface = (
         "Use the following context to answer naturally. "
         "When referencing information, write in narrative form — for example: "
