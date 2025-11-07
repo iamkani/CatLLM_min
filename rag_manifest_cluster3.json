@@ -1,0 +1,515 @@
+{
+  "input_dir": "C:\\Users\\t2adc\\Downloads\\Cluster 3\\Cluster 3",
+  "settings": {
+    "extensions": [
+      "docx",
+      "pdf"
+    ],
+    "name_filter": null,
+    "chunk_chars": 1400,
+    "overlap": 200,
+    "strip_boilerplate": true,
+    "workers": 6,
+    "deps": {
+      "pypdf": true
+    }
+  },
+  "files": [
+    {
+      "name": "0103.pdf",
+      "rel_path": "0103.pdf",
+      "type": "pdf",
+      "info": "0103.pdf (PDF pages: 2)",
+      "pages_count": 2,
+      "empty_pages": [],
+      "chunks_before_dedup": 8,
+      "chunks_after_dedup": 8,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "1-s2.0-S1751731114000743-mai.pdf",
+      "rel_path": "1-s2.0-S1751731114000743-mai.pdf",
+      "type": "pdf",
+      "info": "1-s2.0-S1751731114000743-mai.pdf (PDF pages: 17)",
+      "pages_count": 17,
+      "empty_pages": [],
+      "chunks_before_dedup": 84,
+      "chunks_after_dedup": 84,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": [
+        "Berry, Wall and Pryce",
+        "Genetics and genomics of cattle reproduction"
+      ]
+    },
+    {
+      "name": "240 - Farm economic thinking.pdf",
+      "rel_path": "240 - Farm economic thinking.pdf",
+      "type": "pdf",
+      "info": "240 - Farm economic thinking.pdf (PDF pages: 37)",
+      "pages_count": 37,
+      "empty_pages": [],
+      "chunks_before_dedup": 106,
+      "chunks_after_dedup": 106,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "301867.pdf",
+      "rel_path": "301867.pdf",
+      "type": "pdf",
+      "info": "301867.pdf (PDF pages: 56)",
+      "pages_count": 56,
+      "empty_pages": [
+        6,
+        28,
+        29
+      ],
+      "chunks_before_dedup": 53,
+      "chunks_after_dedup": 53,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": [
+        "Animal Genomics and Biotechnology Education",
+        "Van Eenennaam 2/2019"
+      ]
+    },
+    {
+      "name": "614bcc19-036f-434e-9d4.pdf",
+      "rel_path": "614bcc19-036f-434e-9d4.pdf",
+      "type": "pdf",
+      "info": "614bcc19-036f-434e-9d4.pdf (PDF pages: 311)",
+      "pages_count": 311,
+      "empty_pages": [],
+      "chunks_before_dedup": 634,
+      "chunks_after_dedup": 634,
+      "boilerplate_header_lines": [
+        "Textbook Animal Breeding and Genetics"
+      ],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "agropustaka.id_buku_Raising-.pdf",
+      "rel_path": "agropustaka.id_buku_Raising-.pdf",
+      "type": "pdf",
+      "info": "agropustaka.id_buku_Raising-.pdf (PDF pages: 486)",
+      "pages_count": 486,
+      "empty_pages": [
+        1,
+        326
+      ],
+      "chunks_before_dedup": 766,
+      "chunks_after_dedup": 766,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "beefup-handbook-0824.pdf",
+      "rel_path": "beefup-handbook-0824.pdf",
+      "type": "pdf",
+      "info": "beefup-handbook-0824.pdf (PDF pages: 20)",
+      "pages_count": 20,
+      "empty_pages": [
+        1
+      ],
+      "chunks_before_dedup": 19,
+      "chunks_after_dedup": 19,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": [
+        "✓"
+      ]
+    },
+    {
+      "name": "BIFGuidelinesFinal_updated09.pdf",
+      "rel_path": "BIFGuidelinesFinal_updated09.pdf",
+      "type": "pdf",
+      "info": "BIFGuidelinesFinal_updated09.pdf (PDF pages: 185)",
+      "pages_count": 185,
+      "empty_pages": [],
+      "chunks_before_dedup": 407,
+      "chunks_after_dedup": 407,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Biodiversity+and+genetics+of.pdf",
+      "rel_path": "Biodiversity+and+genetics+of.pdf",
+      "type": "pdf",
+      "info": "Biodiversity+and+genetics+of.pdf (PDF pages: 19)",
+      "pages_count": 19,
+      "empty_pages": [],
+      "chunks_before_dedup": 76,
+      "chunks_after_dedup": 76,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Bovine_Genomics_by_James_E_Womack.pdf",
+      "rel_path": "Bovine_Genomics_by_James_E_Womack.pdf",
+      "type": "pdf",
+      "info": "Bovine_Genomics_by_James_E_Womack.pdf (PDF pages: 2)",
+      "pages_count": 2,
+      "empty_pages": [],
+      "chunks_before_dedup": 7,
+      "chunks_after_dedup": 7,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "breedsofbeefcattle_ritchie.pdf",
+      "rel_path": "breedsofbeefcattle_ritchie.pdf",
+      "type": "pdf",
+      "info": "breedsofbeefcattle_ritchie.pdf (PDF pages: 94)",
+      "pages_count": 94,
+      "empty_pages": [],
+      "chunks_before_dedup": 263,
+      "chunks_after_dedup": 263,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "buildbetter.pdf",
+      "rel_path": "buildbetter.pdf",
+      "type": "pdf",
+      "info": "buildbetter.pdf (PDF pages: 6)",
+      "pages_count": 6,
+      "empty_pages": [],
+      "chunks_before_dedup": 12,
+      "chunks_after_dedup": 12,
+      "boilerplate_header_lines": [
+        "BUILD",
+        "BUILD THEM BETTER:",
+        "UNDERSTANDING CATTLE GENETICS"
+      ],
+      "boilerplate_footer_lines": [
+        "Circle one"
+      ]
+    },
+    {
+      "name": "cattle-genetics.pdf",
+      "rel_path": "cattle-genetics.pdf",
+      "type": "pdf",
+      "info": "cattle-genetics.pdf (PDF pages: 20)",
+      "pages_count": 20,
+      "empty_pages": [],
+      "chunks_before_dedup": 46,
+      "chunks_after_dedup": 46,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "diversity-06-00705-v2.pdf",
+      "rel_path": "diversity-06-00705-v2.pdf",
+      "type": "pdf",
+      "info": "diversity-06-00705-v2.pdf (PDF pages: 46)",
+      "pages_count": 46,
+      "empty_pages": [],
+      "chunks_before_dedup": 119,
+      "chunks_after_dedup": 119,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "E186.pdf",
+      "rel_path": "E186.pdf",
+      "type": "pdf",
+      "info": "E186.pdf (PDF pages: 4)",
+      "pages_count": 4,
+      "empty_pages": [],
+      "chunks_before_dedup": 11,
+      "chunks_after_dedup": 11,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "explore_book_series_beef.pdf",
+      "rel_path": "explore_book_series_beef.pdf",
+      "type": "pdf",
+      "info": "explore_book_series_beef.pdf (PDF pages: 39)",
+      "pages_count": 39,
+      "empty_pages": [],
+      "chunks_before_dedup": 77,
+      "chunks_after_dedup": 77,
+      "boilerplate_header_lines": [
+        "#1 #2",
+        "4-H BEEF PROJECTLessons",
+        "BEEF PROJECT",
+        "Texas 4-H Youth Development | texas4-h.tamu.edu"
+      ],
+      "boilerplate_footer_lines": [
+        "#1 #2"
+      ]
+    },
+    {
+      "name": "FAQ Association Analyst.docx",
+      "rel_path": "FAQ Association Analyst.docx",
+      "type": "docx",
+      "info": "FAQ Association Analyst.docx (DOCX paragraphs: 139)",
+      "pages_count": null,
+      "empty_pages": [],
+      "chunks_before_dedup": 21,
+      "chunks_after_dedup": 21,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "FAQ Buyer or Feeder.docx",
+      "rel_path": "FAQ Buyer or Feeder.docx",
+      "type": "docx",
+      "info": "FAQ Buyer or Feeder.docx (DOCX paragraphs: 447)",
+      "pages_count": null,
+      "empty_pages": [],
+      "chunks_before_dedup": 62,
+      "chunks_after_dedup": 62,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "FAQ Genetic Advisor.docx",
+      "rel_path": "FAQ Genetic Advisor.docx",
+      "type": "docx",
+      "info": "FAQ Genetic Advisor.docx (DOCX paragraphs: 48)",
+      "pages_count": null,
+      "empty_pages": [],
+      "chunks_before_dedup": 10,
+      "chunks_after_dedup": 10,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "FAQ Independent Rancher.docx",
+      "rel_path": "FAQ Independent Rancher.docx",
+      "type": "docx",
+      "info": "FAQ Independent Rancher.docx (DOCX paragraphs: 96)",
+      "pages_count": null,
+      "empty_pages": [],
+      "chunks_before_dedup": 15,
+      "chunks_after_dedup": 15,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "fvets-09-819605.pdf",
+      "rel_path": "fvets-09-819605.pdf",
+      "type": "pdf",
+      "info": "fvets-09-819605.pdf (PDF pages: 8)",
+      "pages_count": 8,
+      "empty_pages": [],
+      "chunks_before_dedup": 50,
+      "chunks_after_dedup": 50,
+      "boilerplate_header_lines": [
+        "Sakowski et al. Quality of Carcass and Beef"
+      ],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "GENETIC PRINCIPLES.pdf",
+      "rel_path": "GENETIC PRINCIPLES.pdf",
+      "type": "pdf",
+      "info": "GENETIC PRINCIPLES.pdf (PDF pages: 3)",
+      "pages_count": 3,
+      "empty_pages": [],
+      "chunks_before_dedup": 16,
+      "chunks_after_dedup": 16,
+      "boilerplate_header_lines": [
+        "GENETIC PRINCIPLES"
+      ],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "GeneticsCattle.pdf",
+      "rel_path": "GeneticsCattle.pdf",
+      "type": "pdf",
+      "info": "GeneticsCattle.pdf (PDF pages: 642)",
+      "pages_count": 642,
+      "empty_pages": [
+        1,
+        3
+      ],
+      "chunks_before_dedup": 2151,
+      "chunks_after_dedup": 2151,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Grass-fed-genetics.pdf",
+      "rel_path": "Grass-fed-genetics.pdf",
+      "type": "pdf",
+      "info": "Grass-fed-genetics.pdf (PDF pages: 18)",
+      "pages_count": 18,
+      "empty_pages": [],
+      "chunks_before_dedup": 35,
+      "chunks_after_dedup": 35,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "id-108_2021_the_kentucky_bee.pdf",
+      "rel_path": "id-108_2021_the_kentucky_bee.pdf",
+      "type": "pdf",
+      "info": "id-108_2021_the_kentucky_bee.pdf (PDF pages: 16)",
+      "pages_count": 16,
+      "empty_pages": [],
+      "chunks_before_dedup": 75,
+      "chunks_after_dedup": 75,
+      "boilerplate_header_lines": [
+        "Chapter 6—Planning the Genetics Program"
+      ],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Info-CalvingEase.pdf",
+      "rel_path": "Info-CalvingEase.pdf",
+      "type": "pdf",
+      "info": "Info-CalvingEase.pdf (PDF pages: 1)",
+      "pages_count": 1,
+      "empty_pages": [],
+      "chunks_before_dedup": 1,
+      "chunks_after_dedup": 1,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Info-CarcassWeight.pdf",
+      "rel_path": "Info-CarcassWeight.pdf",
+      "type": "pdf",
+      "info": "Info-CarcassWeight.pdf (PDF pages: 1)",
+      "pages_count": 1,
+      "empty_pages": [],
+      "chunks_before_dedup": 1,
+      "chunks_after_dedup": 1,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Info-Fertility.pdf",
+      "rel_path": "Info-Fertility.pdf",
+      "type": "pdf",
+      "info": "Info-Fertility.pdf (PDF pages: 1)",
+      "pages_count": 1,
+      "empty_pages": [],
+      "chunks_before_dedup": 1,
+      "chunks_after_dedup": 1,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Info-Performance.pdf",
+      "rel_path": "Info-Performance.pdf",
+      "type": "pdf",
+      "info": "Info-Performance.pdf (PDF pages: 1)",
+      "pages_count": 1,
+      "empty_pages": [],
+      "chunks_before_dedup": 1,
+      "chunks_after_dedup": 1,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Info-RibeyeArea.pdf",
+      "rel_path": "Info-RibeyeArea.pdf",
+      "type": "pdf",
+      "info": "Info-RibeyeArea.pdf (PDF pages: 1)",
+      "pages_count": 1,
+      "empty_pages": [],
+      "chunks_before_dedup": 1,
+      "chunks_after_dedup": 1,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "inherit-select-technical-bulletin.pdf",
+      "rel_path": "inherit-select-technical-bulletin.pdf",
+      "type": "pdf",
+      "info": "inherit-select-technical-bulletin.pdf (PDF pages: 16)",
+      "pages_count": 16,
+      "empty_pages": [],
+      "chunks_before_dedup": 42,
+      "chunks_after_dedup": 42,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "jan0230041133.pdf",
+      "rel_path": "jan0230041133.pdf",
+      "type": "pdf",
+      "info": "jan0230041133.pdf (PDF pages: 6)",
+      "pages_count": 6,
+      "empty_pages": [],
+      "chunks_before_dedup": 19,
+      "chunks_after_dedup": 19,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": [
+        "Downloaded from https://academic.oup.com/jas/article/23/4/1133/4702842 by Baylor Medical Ctr user on 10 October 2025"
+      ]
+    },
+    {
+      "name": "official_igenity-beef-handbo.pdf",
+      "rel_path": "official_igenity-beef-handbo.pdf",
+      "type": "pdf",
+      "info": "official_igenity-beef-handbo.pdf (PDF pages: 20)",
+      "pages_count": 20,
+      "empty_pages": [],
+      "chunks_before_dedup": 28,
+      "chunks_after_dedup": 28,
+      "boilerplate_header_lines": [
+        "neogen.com"
+      ],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "powermix-infographics-web.pdf",
+      "rel_path": "powermix-infographics-web.pdf",
+      "type": "pdf",
+      "info": "powermix-infographics-web.pdf (PDF pages: 1)",
+      "pages_count": 1,
+      "empty_pages": [],
+      "chunks_before_dedup": 1,
+      "chunks_after_dedup": 1,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "SexxedGuidelinesLR.pdf",
+      "rel_path": "SexxedGuidelinesLR.pdf",
+      "type": "pdf",
+      "info": "SexxedGuidelinesLR.pdf (PDF pages: 2)",
+      "pages_count": 2,
+      "empty_pages": [],
+      "chunks_before_dedup": 3,
+      "chunks_after_dedup": 3,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "the-genetics-of-cattle-edited-by-r-fries-and-a-rubinsky-cabi-publishing-1999-isbn-0-85199-258-7-710-pages.pdf",
+      "rel_path": "the-genetics-of-cattle-edited-by-r-fries-and-a-rubinsky-cabi-publishing-1999-isbn-0-85199-258-7-710-pages.pdf",
+      "type": "pdf",
+      "info": "the-genetics-of-cattle-edited-by-r-fries-and-a-rubinsky-cabi-publishing-1999-isbn-0-85199-258-7-710-pages.pdf (PDF pages: 3)",
+      "pages_count": 3,
+      "empty_pages": [],
+      "chunks_before_dedup": 12,
+      "chunks_after_dedup": 12,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": [
+        "https://doi.org/10.1017/S0016672300229145 Published online by Cambridge University Press"
+      ]
+    },
+    {
+      "name": "USDA Beef.docx",
+      "rel_path": "USDA Beef.docx",
+      "type": "docx",
+      "info": "USDA Beef.docx (DOCX paragraphs: 57)",
+      "pages_count": null,
+      "empty_pages": [],
+      "chunks_before_dedup": 10,
+      "chunks_after_dedup": 10,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    }
+  ],
+  "summary": {
+    "files_count": 37,
+    "chunks_total_before_dedup": 5243,
+    "chunks_total_after_dedup": 5243
+  }
+}
