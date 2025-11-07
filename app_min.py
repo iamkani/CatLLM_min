@@ -199,9 +199,10 @@ def minimal_model_reply(
     ctx_joined = "\n\n---\n".join(context_chunks[:4])
     preface = (
         "Use the following context to answer naturally. "
-        "When referencing information, write in narrative form — for example: "
-        "'If you look in Feb2022HW.pdf on page 39, you can find...' instead of using bracketed citations. "
-        "Focus on sounding conversational, while still grounding your answer in the provided materials.\n\n"
+        "When referencing information, explicitly mention the document name and, if available, the page number. "
+        "For example: 'In Feb2022HW.pdf, page 39, you can find...' "
+        "Avoid saying 'the documents' or 'the provided materials'—use the actual file names provided below. "
+        "Be clear and conversational, but make sure the reader can trace each fact to a source file.\n\n"
         + ctx_joined
         + "\n\n"
     )
