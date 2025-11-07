@@ -32,9 +32,13 @@ SOURCE_MAP = {
 # ---------- linkify helpers ----------
 _BRACKETED = re.compile(r"\[([^\[\]]+?)\](?!\()", re.UNICODE)
 _LABELS = sorted(SOURCE_MAP.keys(), key=len, reverse=True)
+# Build the alternation of known labels (already sorted by length above)
 _ALT = "|".join(re.escape(k) for k in _LABELS)
-# avoid matching when already part of a markdown link "[...](...)" or "[...]" we already processed
-_BARE = re.compile(rf"(?<!\[)({_ALT})(?!\])", re.IGNORECASE | re.UNICODE)
+
+_BARE = re.compile(
+    rf"(?<!\[)(?:(?<=^)|(?<=[^\w-]))({_ALT})(?:(?=$)|(?=[^\w-]))",
+    re.IGNORECASE | re.UNICODE,
+)
 
 def _lookup(urlmap, key: str) -> str | None:
     # case-insensitive lookup
@@ -44,20 +48,29 @@ def _lookup(urlmap, key: str) -> str | None:
     return None
 
 def linkify_labels(text: str) -> str:
+    def _lookup(urlmap, key: str) -> str | None:
+        for k, v in urlmap.items():
+            if k.lower() == key.lower():
+                return v
+        return None
+
+    # 1) Linkify things already in square brackets like: [USDA AMS], [GAO], ...
     def _sub_bracketed(m):
         inside = m.group(1).strip()
-        norm = inside.replace("\u2013", "-").replace("\u2014", "-")  # – —
-        base = re.split(r"[|\-:]", norm, 1)[0].strip()
+        norm = inside.replace("\u2013", "-").replace("\u2014", "-")
+        base = re.split(r"[|\-:]", norm, maxsplit=1)[0].strip()
         url = _lookup(SOURCE_MAP, base)
         return f"[{inside}]({url})" if url else m.group(0)
+
     out = _BRACKETED.sub(_sub_bracketed, text)
 
+    # 2) Linkify bare labels only when they’re standalone words/phrases
     def _sub_bare(m):
         label = m.group(1)
         url = _lookup(SOURCE_MAP, label)
         return f"[{label}]({url})" if url else label
-    out = _BARE.sub(_sub_bare, out)
 
+    out = _BARE.sub(_sub_bare, out)
     return out
 
 # ---------- loader for prebuilt corpora (.json or .json.gz) ----------
