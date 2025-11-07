@@ -1,0 +1,887 @@
+{
+  "input_dir": "C:\\Users\\t2adc\\Downloads\\Herford-Dataset",
+  "settings": {
+    "extensions": [
+      "pdf"
+    ],
+    "name_filter": "hw|ba",
+    "chunk_chars": 1400,
+    "overlap": 200,
+    "strip_boilerplate": true,
+    "workers": 15,
+    "deps": {
+      "pypdf": true
+    }
+  },
+  "files": [
+    {
+      "name": "april2020hw.pdf",
+      "rel_path": "2020\\april2020hw.pdf",
+      "type": "pdf",
+      "info": "april2020hw.pdf (PDF pages: 108)",
+      "pages_count": 108,
+      "empty_pages": [
+        44
+      ],
+      "chunks_before_dedup": 337,
+      "chunks_after_dedup": 337,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "august2020hw.pdf",
+      "rel_path": "2020\\august2020hw.pdf",
+      "type": "pdf",
+      "info": "august2020hw.pdf (PDF pages: 76)",
+      "pages_count": 76,
+      "empty_pages": [
+        75
+      ],
+      "chunks_before_dedup": 297,
+      "chunks_after_dedup": 297,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "december2020hw.pdf",
+      "rel_path": "2020\\december2020hw.pdf",
+      "type": "pdf",
+      "info": "december2020hw.pdf (PDF pages: 144)",
+      "pages_count": 144,
+      "empty_pages": [],
+      "chunks_before_dedup": 410,
+      "chunks_after_dedup": 410,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "february2020hw.pdf",
+      "rel_path": "2020\\february2020hw.pdf",
+      "type": "pdf",
+      "info": "february2020hw.pdf (PDF pages: 124)",
+      "pages_count": 124,
+      "empty_pages": [
+        123
+      ],
+      "chunks_before_dedup": 380,
+      "chunks_after_dedup": 380,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "january2020hw.pdf",
+      "rel_path": "2020\\january2020hw.pdf",
+      "type": "pdf",
+      "info": "january2020hw.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        115
+      ],
+      "chunks_before_dedup": 350,
+      "chunks_after_dedup": 350,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "july2020hw.pdf",
+      "rel_path": "2020\\july2020hw.pdf",
+      "type": "pdf",
+      "info": "july2020hw.pdf (PDF pages: 218)",
+      "pages_count": 218,
+      "empty_pages": [
+        117,
+        128,
+        129
+      ],
+      "chunks_before_dedup": 671,
+      "chunks_after_dedup": 671,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "march2020hw.pdf",
+      "rel_path": "2020\\march2020hw.pdf",
+      "type": "pdf",
+      "info": "march2020hw.pdf (PDF pages: 136)",
+      "pages_count": 136,
+      "empty_pages": [
+        17
+      ],
+      "chunks_before_dedup": 343,
+      "chunks_after_dedup": 343,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "mayjune20hw.pdf",
+      "rel_path": "2020\\mayjune20hw.pdf",
+      "type": "pdf",
+      "info": "mayjune20hw.pdf (PDF pages: 100)",
+      "pages_count": 100,
+      "empty_pages": [],
+      "chunks_before_dedup": 325,
+      "chunks_after_dedup": 325,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "november2020hw.pdf",
+      "rel_path": "2020\\november2020hw.pdf",
+      "type": "pdf",
+      "info": "november2020hw.pdf (PDF pages: 100)",
+      "pages_count": 100,
+      "empty_pages": [],
+      "chunks_before_dedup": 306,
+      "chunks_after_dedup": 306,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "october2020hw.pdf",
+      "rel_path": "2020\\october2020hw.pdf",
+      "type": "pdf",
+      "info": "october2020hw.pdf (PDF pages: 112)",
+      "pages_count": 112,
+      "empty_pages": [
+        111
+      ],
+      "chunks_before_dedup": 339,
+      "chunks_after_dedup": 339,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "september2020hw.pdf",
+      "rel_path": "2020\\september2020hw.pdf",
+      "type": "pdf",
+      "info": "september2020hw.pdf (PDF pages: 180)",
+      "pages_count": 180,
+      "empty_pages": [
+        54,
+        68
+      ],
+      "chunks_before_dedup": 448,
+      "chunks_after_dedup": 448,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "April2021hw.pdf",
+      "rel_path": "2021\\April2021hw.pdf",
+      "type": "pdf",
+      "info": "April2021hw.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        116
+      ],
+      "chunks_before_dedup": 345,
+      "chunks_after_dedup": 345,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "August-2021-hw.pdf",
+      "rel_path": "2021\\August-2021-hw.pdf",
+      "type": "pdf",
+      "info": "August-2021-hw.pdf (PDF pages: 88)",
+      "pages_count": 88,
+      "empty_pages": [
+        87
+      ],
+      "chunks_before_dedup": 291,
+      "chunks_after_dedup": 291,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "december-2021-hw.pdf",
+      "rel_path": "2021\\december-2021-hw.pdf",
+      "type": "pdf",
+      "info": "december-2021-hw.pdf (PDF pages: 156)",
+      "pages_count": 156,
+      "empty_pages": [
+        17,
+        21,
+        67,
+        73,
+        100,
+        102
+      ],
+      "chunks_before_dedup": 468,
+      "chunks_after_dedup": 468,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "february2021hw.pdf",
+      "rel_path": "2021\\february2021hw.pdf",
+      "type": "pdf",
+      "info": "february2021hw.pdf (PDF pages: 124)",
+      "pages_count": 124,
+      "empty_pages": [
+        123
+      ],
+      "chunks_before_dedup": 359,
+      "chunks_after_dedup": 359,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "january2021hw.pdf",
+      "rel_path": "2021\\january2021hw.pdf",
+      "type": "pdf",
+      "info": "january2021hw.pdf (PDF pages: 112)",
+      "pages_count": 112,
+      "empty_pages": [
+        111
+      ],
+      "chunks_before_dedup": 354,
+      "chunks_after_dedup": 354,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "July-2021-hw.pdf",
+      "rel_path": "2021\\July-2021-hw.pdf",
+      "type": "pdf",
+      "info": "July-2021-hw.pdf (PDF pages: 256)",
+      "pages_count": 256,
+      "empty_pages": [],
+      "chunks_before_dedup": 762,
+      "chunks_after_dedup": 762,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "march-2021-hw.pdf",
+      "rel_path": "2021\\march-2021-hw.pdf",
+      "type": "pdf",
+      "info": "march-2021-hw.pdf (PDF pages: 156)",
+      "pages_count": 156,
+      "empty_pages": [
+        156
+      ],
+      "chunks_before_dedup": 392,
+      "chunks_after_dedup": 392,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "MayJune-2021-hw.pdf",
+      "rel_path": "2021\\MayJune-2021-hw.pdf",
+      "type": "pdf",
+      "info": "MayJune-2021-hw.pdf (PDF pages: 112)",
+      "pages_count": 112,
+      "empty_pages": [
+        39
+      ],
+      "chunks_before_dedup": 343,
+      "chunks_after_dedup": 343,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "november2021hw.pdf",
+      "rel_path": "2021\\november2021hw.pdf",
+      "type": "pdf",
+      "info": "november2021hw.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        21,
+        42,
+        116
+      ],
+      "chunks_before_dedup": 383,
+      "chunks_after_dedup": 383,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "October-2021-HW.pdf",
+      "rel_path": "2021\\October-2021-HW.pdf",
+      "type": "pdf",
+      "info": "October-2021-HW.pdf (PDF pages: 120)",
+      "pages_count": 120,
+      "empty_pages": [
+        2,
+        119
+      ],
+      "chunks_before_dedup": 354,
+      "chunks_after_dedup": 354,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Sept-2021-hw.pdf",
+      "rel_path": "2021\\Sept-2021-hw.pdf",
+      "type": "pdf",
+      "info": "Sept-2021-hw.pdf (PDF pages: 204)",
+      "pages_count": 204,
+      "empty_pages": [
+        77,
+        86,
+        105
+      ],
+      "chunks_before_dedup": 499,
+      "chunks_after_dedup": 499,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "April-2022-hw.pdf",
+      "rel_path": "2022\\April-2022-hw.pdf",
+      "type": "pdf",
+      "info": "April-2022-hw.pdf (PDF pages: 108)",
+      "pages_count": 108,
+      "empty_pages": [
+        27,
+        54,
+        59,
+        108
+      ],
+      "chunks_before_dedup": 306,
+      "chunks_after_dedup": 306,
+      "boilerplate_header_lines": [
+        "HEREFORD SEEDSTOCK SECTION"
+      ],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "August-2022-hw.pdf",
+      "rel_path": "2022\\August-2022-hw.pdf",
+      "type": "pdf",
+      "info": "August-2022-hw.pdf (PDF pages: 76)",
+      "pages_count": 76,
+      "empty_pages": [],
+      "chunks_before_dedup": 264,
+      "chunks_after_dedup": 264,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Feb2022HW.pdf",
+      "rel_path": "2022\\Feb2022HW.pdf",
+      "type": "pdf",
+      "info": "Feb2022HW.pdf (PDF pages: 128)",
+      "pages_count": 128,
+      "empty_pages": [],
+      "chunks_before_dedup": 380,
+      "chunks_after_dedup": 380,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Jan-2022-hw.pdf",
+      "rel_path": "2022\\Jan-2022-hw.pdf",
+      "type": "pdf",
+      "info": "Jan-2022-hw.pdf (PDF pages: 120)",
+      "pages_count": 120,
+      "empty_pages": [],
+      "chunks_before_dedup": 391,
+      "chunks_after_dedup": 391,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "july-2022-hw.pdf",
+      "rel_path": "2022\\july-2022-hw.pdf",
+      "type": "pdf",
+      "info": "july-2022-hw.pdf (PDF pages: 228)",
+      "pages_count": 228,
+      "empty_pages": [
+        60
+      ],
+      "chunks_before_dedup": 678,
+      "chunks_after_dedup": 678,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "March-2022-hw.pdf",
+      "rel_path": "2022\\March-2022-hw.pdf",
+      "type": "pdf",
+      "info": "March-2022-hw.pdf (PDF pages: 148)",
+      "pages_count": 148,
+      "empty_pages": [
+        25,
+        34,
+        101,
+        148
+      ],
+      "chunks_before_dedup": 387,
+      "chunks_after_dedup": 387,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "MayJune-2022-hw.pdf",
+      "rel_path": "2022\\MayJune-2022-hw.pdf",
+      "type": "pdf",
+      "info": "MayJune-2022-hw.pdf (PDF pages: 108)",
+      "pages_count": 108,
+      "empty_pages": [
+        29
+      ],
+      "chunks_before_dedup": 369,
+      "chunks_after_dedup": 369,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Oct-2022-hw.pdf",
+      "rel_path": "2022\\Oct-2022-hw.pdf",
+      "type": "pdf",
+      "info": "Oct-2022-hw.pdf (PDF pages: 112)",
+      "pages_count": 112,
+      "empty_pages": [],
+      "chunks_before_dedup": 324,
+      "chunks_after_dedup": 324,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "sept-2022-hw.pdf",
+      "rel_path": "2022\\sept-2022-hw.pdf",
+      "type": "pdf",
+      "info": "sept-2022-hw.pdf (PDF pages: 196)",
+      "pages_count": 196,
+      "empty_pages": [
+        19,
+        120,
+        138
+      ],
+      "chunks_before_dedup": 489,
+      "chunks_after_dedup": 489,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "April-2023-hw.pdf",
+      "rel_path": "2023\\April-2023-hw.pdf",
+      "type": "pdf",
+      "info": "April-2023-hw.pdf (PDF pages: 108)",
+      "pages_count": 108,
+      "empty_pages": [
+        13,
+        45,
+        108
+      ],
+      "chunks_before_dedup": 345,
+      "chunks_after_dedup": 345,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Aug-2023-hw.pdf",
+      "rel_path": "2023\\Aug-2023-hw.pdf",
+      "type": "pdf",
+      "info": "Aug-2023-hw.pdf (PDF pages: 84)",
+      "pages_count": 84,
+      "empty_pages": [
+        47,
+        54,
+        83
+      ],
+      "chunks_before_dedup": 227,
+      "chunks_after_dedup": 227,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "February-2023-hw.pdf",
+      "rel_path": "2023\\February-2023-hw.pdf",
+      "type": "pdf",
+      "info": "February-2023-hw.pdf (PDF pages: 128)",
+      "pages_count": 128,
+      "empty_pages": [],
+      "chunks_before_dedup": 414,
+      "chunks_after_dedup": 414,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "January-2023-hw.pdf",
+      "rel_path": "2023\\January-2023-hw.pdf",
+      "type": "pdf",
+      "info": "January-2023-hw.pdf (PDF pages: 112)",
+      "pages_count": 112,
+      "empty_pages": [],
+      "chunks_before_dedup": 360,
+      "chunks_after_dedup": 349,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "July-2023-hw.pdf",
+      "rel_path": "2023\\July-2023-hw.pdf",
+      "type": "pdf",
+      "info": "July-2023-hw.pdf (PDF pages: 216)",
+      "pages_count": 216,
+      "empty_pages": [
+        11,
+        13,
+        66,
+        151
+      ],
+      "chunks_before_dedup": 641,
+      "chunks_after_dedup": 641,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "March-2023-HW.pdf",
+      "rel_path": "2023\\March-2023-HW.pdf",
+      "type": "pdf",
+      "info": "March-2023-HW.pdf (PDF pages: 140)",
+      "pages_count": 140,
+      "empty_pages": [
+        34,
+        62,
+        63,
+        93
+      ],
+      "chunks_before_dedup": 399,
+      "chunks_after_dedup": 399,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "MayJune-2023-hw.pdf",
+      "rel_path": "2023\\MayJune-2023-hw.pdf",
+      "type": "pdf",
+      "info": "MayJune-2023-hw.pdf (PDF pages: 100)",
+      "pages_count": 100,
+      "empty_pages": [
+        13,
+        16,
+        17,
+        41
+      ],
+      "chunks_before_dedup": 319,
+      "chunks_after_dedup": 319,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "November-2023-HW.pdf",
+      "rel_path": "2023\\November-2023-HW.pdf",
+      "type": "pdf",
+      "info": "November-2023-HW.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        3,
+        11,
+        15,
+        67,
+        71
+      ],
+      "chunks_before_dedup": 321,
+      "chunks_after_dedup": 321,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "October-2023-BA.pdf",
+      "rel_path": "2023\\October-2023-BA.pdf",
+      "type": "pdf",
+      "info": "October-2023-BA.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        39,
+        42,
+        55,
+        59,
+        74
+      ],
+      "chunks_before_dedup": 254,
+      "chunks_after_dedup": 254,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Sept-2023-hw.pdf",
+      "rel_path": "2023\\Sept-2023-hw.pdf",
+      "type": "pdf",
+      "info": "Sept-2023-hw.pdf (PDF pages: 188)",
+      "pages_count": 188,
+      "empty_pages": [
+        13,
+        46,
+        54,
+        62,
+        104
+      ],
+      "chunks_before_dedup": 461,
+      "chunks_after_dedup": 461,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "April-2024-HW.pdf",
+      "rel_path": "2024\\April-2024-HW.pdf",
+      "type": "pdf",
+      "info": "April-2024-HW.pdf (PDF pages: 92)",
+      "pages_count": 92,
+      "empty_pages": [],
+      "chunks_before_dedup": 288,
+      "chunks_after_dedup": 288,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "August-2024-BA.pdf",
+      "rel_path": "2024\\August-2024-BA.pdf",
+      "type": "pdf",
+      "info": "August-2024-BA.pdf (PDF pages: 84)",
+      "pages_count": 84,
+      "empty_pages": [
+        36
+      ],
+      "chunks_before_dedup": 228,
+      "chunks_after_dedup": 228,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "Feb-2024-BA.pdf",
+      "rel_path": "2024\\Feb-2024-BA.pdf",
+      "type": "pdf",
+      "info": "Feb-2024-BA.pdf (PDF pages: 140)",
+      "pages_count": 140,
+      "empty_pages": [
+        14,
+        15,
+        60,
+        66,
+        78,
+        87
+      ],
+      "chunks_before_dedup": 351,
+      "chunks_after_dedup": 351,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "January-2024-BA.pdf",
+      "rel_path": "2024\\January-2024-BA.pdf",
+      "type": "pdf",
+      "info": "January-2024-BA.pdf (PDF pages: 124)",
+      "pages_count": 124,
+      "empty_pages": [
+        10
+      ],
+      "chunks_before_dedup": 322,
+      "chunks_after_dedup": 322,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "July-2024-HW.pdf",
+      "rel_path": "2024\\July-2024-HW.pdf",
+      "type": "pdf",
+      "info": "July-2024-HW.pdf (PDF pages: 212)",
+      "pages_count": 212,
+      "empty_pages": [
+        11,
+        69,
+        156
+      ],
+      "chunks_before_dedup": 614,
+      "chunks_after_dedup": 614,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "March-2024-HW.pdf",
+      "rel_path": "2024\\March-2024-HW.pdf",
+      "type": "pdf",
+      "info": "March-2024-HW.pdf (PDF pages: 140)",
+      "pages_count": 140,
+      "empty_pages": [
+        13,
+        15
+      ],
+      "chunks_before_dedup": 364,
+      "chunks_after_dedup": 364,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "MayJune-2024-HW_web.pdf",
+      "rel_path": "2024\\MayJune-2024-HW_web.pdf",
+      "type": "pdf",
+      "info": "MayJune-2024-HW_web.pdf (PDF pages: 92)",
+      "pages_count": 92,
+      "empty_pages": [],
+      "chunks_before_dedup": 300,
+      "chunks_after_dedup": 300,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "November-2024-HW-C.pdf",
+      "rel_path": "2024\\November-2024-HW-C.pdf",
+      "type": "pdf",
+      "info": "November-2024-HW-C.pdf (PDF pages: 124)",
+      "pages_count": 124,
+      "empty_pages": [
+        3,
+        51,
+        74
+      ],
+      "chunks_before_dedup": 384,
+      "chunks_after_dedup": 384,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "October-2024-BA.pdf",
+      "rel_path": "2024\\October-2024-BA.pdf",
+      "type": "pdf",
+      "info": "October-2024-BA.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        52,
+        61
+      ],
+      "chunks_before_dedup": 294,
+      "chunks_after_dedup": 294,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "September-2024-HW-CP.pdf",
+      "rel_path": "2024\\September-2024-HW-CP.pdf",
+      "type": "pdf",
+      "info": "September-2024-HW-CP.pdf (PDF pages: 180)",
+      "pages_count": 180,
+      "empty_pages": [
+        3,
+        17,
+        44,
+        92,
+        114,
+        121
+      ],
+      "chunks_before_dedup": 463,
+      "chunks_after_dedup": 463,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "april-2025-hw-insert-c.pdf",
+      "rel_path": "2025\\april-2025-hw-insert-c.pdf",
+      "type": "pdf",
+      "info": "april-2025-hw-insert-c.pdf (PDF pages: 104)",
+      "pages_count": 104,
+      "empty_pages": [
+        23
+      ],
+      "chunks_before_dedup": 303,
+      "chunks_after_dedup": 303,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "august-2025-ba-c.pdf",
+      "rel_path": "2025\\august-2025-ba-c.pdf",
+      "type": "pdf",
+      "info": "august-2025-ba-c.pdf (PDF pages: 84)",
+      "pages_count": 84,
+      "empty_pages": [
+        31,
+        33,
+        37
+      ],
+      "chunks_before_dedup": 229,
+      "chunks_after_dedup": 229,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "february-2025-ba.pdf",
+      "rel_path": "2025\\february-2025-ba.pdf",
+      "type": "pdf",
+      "info": "february-2025-ba.pdf (PDF pages: 132)",
+      "pages_count": 132,
+      "empty_pages": [
+        7,
+        30,
+        52,
+        53,
+        65
+      ],
+      "chunks_before_dedup": 328,
+      "chunks_after_dedup": 328,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "January-25-BA.pdf",
+      "rel_path": "2025\\January-25-BA.pdf",
+      "type": "pdf",
+      "info": "January-25-BA.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        50,
+        96,
+        97
+      ],
+      "chunks_before_dedup": 289,
+      "chunks_after_dedup": 289,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "march-25-hw-c.pdf",
+      "rel_path": "2025\\march-25-hw-c.pdf",
+      "type": "pdf",
+      "info": "march-25-hw-c.pdf (PDF pages: 140)",
+      "pages_count": 140,
+      "empty_pages": [
+        81,
+        98
+      ],
+      "chunks_before_dedup": 356,
+      "chunks_after_dedup": 356,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "mayjune-2025-hw-c.pdf",
+      "rel_path": "2025\\mayjune-2025-hw-c.pdf",
+      "type": "pdf",
+      "info": "mayjune-2025-hw-c.pdf (PDF pages: 92)",
+      "pages_count": 92,
+      "empty_pages": [],
+      "chunks_before_dedup": 313,
+      "chunks_after_dedup": 313,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    },
+    {
+      "name": "October-2025-BA.pdf",
+      "rel_path": "2025\\October-2025-BA.pdf",
+      "type": "pdf",
+      "info": "October-2025-BA.pdf (PDF pages: 116)",
+      "pages_count": 116,
+      "empty_pages": [
+        7,
+        14,
+        15,
+        46,
+        49,
+        57
+      ],
+      "chunks_before_dedup": 293,
+      "chunks_after_dedup": 293,
+      "boilerplate_header_lines": [],
+      "boilerplate_footer_lines": []
+    }
+  ],
+  "summary": {
+    "files_count": 58,
+    "chunks_total_before_dedup": 21793,
+    "chunks_total_after_dedup": 21793
+  }
+}
