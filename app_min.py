@@ -1,3 +1,4 @@
+
 import os
 import io
 import math
@@ -475,7 +476,14 @@ if st.button("Clear documents", key="btn_clear_docs_top"):
 
 # Process newly uploaded files
 if uploads:
+    max_docs = 2
+    # Respect a maximum number of simultaneously loaded documents.
+    # Skip any files that would exceed the limit and notify the user.
     for f in uploads:
+        # If we've already reached the document limit, warn and stop processing further uploads
+        if len(st.session_state.docs) >= max_docs:
+            st.warning(f"Maximum of {max_docs} documents can be uploaded at once. Additional files were skipped.")
+            break
         text, info, meta = extract_text_from_upload(f)
         if text:
             chunks = build_source_marked_chunks(f.name, meta, text)
@@ -519,12 +527,18 @@ if st.session_state.docs:
 
 # Optional summarization
 if st.session_state.docs:
+    # Create a placeholder to manage summary output. This allows overwriting
+    # the previous summary when generating a new one.
+    if "summary_placeholder" not in st.session_state:
+        st.session_state.summary_placeholder = st.empty()
     if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
         context: List[str] = []
         for d in st.session_state.docs:
             sample = d["text"][:1500]
             meta_info = d["meta"]
             context.append(f"{d['name']} — {meta_info}\n{sample}")
+        # Generate the summary text either using the OpenAI API or a local heuristic.
+        summary_md = ""
         if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
             try:
                 from openai import OpenAI  # type: ignore
@@ -542,22 +556,21 @@ if st.session_state.docs:
                     ],
                     temperature=0.2,
                 )
-                st.markdown(resp.choices[0].message.content or "(no content)")
+                summary_md = resp.choices[0].message.content or "(no content)"
             except Exception as e:
                 st.error(f"Model summary failed, falling back to local: {e}")
-                agg = "### Local summary\n"
-                for d in st.session_state.docs:
-                    toks = tokenize(d["text"])
-                    common_terms = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                    agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common_terms}\n"
-                st.markdown(agg)
-        else:
+        # Fall back to a local summary if no OpenAI API or on error.
+        if not summary_md:
             agg = "### Local summary\n"
             for d in st.session_state.docs:
                 toks = tokenize(d["text"])
                 common_terms = ", ".join(w for w, _ in Counter(toks).most_common(10))
                 agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common_terms}\n"
-            st.markdown(agg)
+            summary_md = agg
+        # Clear any previous summary and render the new one.
+        placeholder = st.session_state.summary_placeholder
+        placeholder.empty()
+        placeholder.markdown(summary_md)
 
 # Separator
 st.markdown("---")
@@ -580,7 +593,24 @@ if prompt:
 
     upload_chunks = st.session_state.all_chunks or []
     if upload_chunks:
-        ctx.extend(top_chunks(prompt, upload_chunks, k=K))
+        # When multiple documents are uploaded, ensure we retrieve context from each document.
+        # Group the chunks by the originating document name, extracted from the leading bracket.
+        doc_chunks_map: Dict[str, List[str]] = {}
+        for c in upload_chunks:
+            # Each chunk begins with a marker like "[filename | type | ...]".
+            # Split on the '|' character and strip the leading '[' to isolate the filename.
+            parts = c.split("|")
+            if parts:
+                name_part = parts[0].strip()
+                if name_part.startswith("["):
+                    name_part = name_part[1:]
+                doc_name = name_part.strip()
+                doc_chunks_map.setdefault(doc_name, []).append(c)
+        # Collect top chunks from each document separately to ensure both documents contribute context.
+        for doc_name, chunks_list in doc_chunks_map.items():
+            ctx.extend(top_chunks(prompt, chunks_list, k=2))
+        # Limit total upload context to K to avoid overfilling.
+        ctx = ctx[:K]
 
     need = K - len(ctx)
     if need > 0:
@@ -606,6 +636,5 @@ if prompt:
             st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
-
 # Footer tip
-st.caption("Tip: install optional extras for richer parsing: `pypdf`, `python-docx`, `openpyxl`.")
+st.caption("Tip: install optional extras for richer parsing: `pypdf`, `python-docx`, `openpyxl`."
