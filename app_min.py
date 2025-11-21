@@ -637,4 +637,4 @@ if prompt:
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
 # Footer tip
-st.caption("Tip: install optional extras for richer parsing: `pypdf`, `python-docx`, `openpyxl`."
+st.caption("Tip: install optional extras for richer parsing: `pypdf`, `python-docx`, `openpyxl`.")
