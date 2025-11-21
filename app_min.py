@@ -1,4 +1,3 @@
-
 import os
 import io
 import math
@@ -470,8 +469,15 @@ uploads = st.file_uploader(
 )
 
 if st.button("Clear documents", key="btn_clear_docs_top"):
+    # Reset uploaded documents and the associated chunks.
     st.session_state.docs = []
     st.session_state.all_chunks = []
+    # Clear any existing summary from previous documents.
+    if "summary_placeholder" in st.session_state:
+        try:
+            st.session_state.summary_placeholder.empty()
+        except Exception:
+            pass
     st.rerun()
 
 # Process newly uploaded files
@@ -636,5 +642,6 @@ if prompt:
             st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
+
 # Footer tip
 st.caption("Tip: install optional extras for richer parsing: `pypdf`, `python-docx`, `openpyxl`.")
