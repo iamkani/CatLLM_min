@@ -469,15 +469,29 @@ uploads = st.file_uploader(
 )
 
 if st.button("Clear documents", key="btn_clear_docs_top"):
-    # Reset uploaded documents and the associated chunks.
+    """Reset the screen to appear as though the user has just logged in (preserve auth)."""
+    # Preserve authentication and, optionally, preloaded stores. Anything else should be reset.
+    auth_state = st.session_state.get("auth", None)
+    stores_state = st.session_state.get("stores", None)
+    # Remove all session keys other than auth and stores. This clears chat, docs, file uploaders,
+    # toggles, dataframes, and any other widget state so the UI looks freshly loaded.
+    for _key in list(st.session_state.keys()):
+        if _key not in {"auth", "stores"}:
+            try:
+                del st.session_state[_key]
+            except Exception:
+                # Some keys may be read-only; ignore failures and proceed.
+                pass
+    # Restore the preserved states explicitly. If they are None, this has no effect.
+    if auth_state is not None:
+        st.session_state.auth = auth_state
+    if stores_state is not None:
+        st.session_state.stores = stores_state
+    # Ensure core collections exist but empty
+    st.session_state.messages = []
     st.session_state.docs = []
     st.session_state.all_chunks = []
-    # Clear any existing summary from previous documents.
-    if "summary_placeholder" in st.session_state:
-        try:
-            st.session_state.summary_placeholder.empty()
-        except Exception:
-            pass
+    # Re-run the app. The UI will be rebuilt with default widgets (like just after login).
     st.rerun()
 
 # Process newly uploaded files
