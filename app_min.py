@@ -642,9 +642,14 @@ if prompt:
                     name_part = name_part[1:]
                 doc_name = name_part.strip()
                 doc_chunks_map.setdefault(doc_name, []).append(c)
-        # Collect top chunks from each document separately to ensure both documents contribute context.
+        # Collect top chunks from each document separately to ensure all documents contribute context.
+        # Distribute the total desired context (K) evenly across the uploaded documents. Each document
+        # contributes up to `per_doc_k` chunks; any remainder will be trimmed later.
+        num_docs = len(doc_chunks_map)
+        # Ensure at least one chunk per document, but otherwise divide K by the number of documents.
+        per_doc_k = max(1, math.ceil(K / num_docs))
         for doc_name, chunks_list in doc_chunks_map.items():
-            ctx.extend(top_chunks(prompt, chunks_list, k=2))
+            ctx.extend(top_chunks(prompt, chunks_list, k=per_doc_k))
         # Limit total upload context to K to avoid overfilling.
         ctx = ctx[:K]
 
