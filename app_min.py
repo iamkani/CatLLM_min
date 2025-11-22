@@ -405,6 +405,11 @@ if "all_chunks" not in st.session_state:
 if "auth" not in st.session_state:
     st.session_state.auth = {"is_authed": False, "username": None, "role": None}
 
+# Key used to manage the file uploader widget. Each time this increments, Streamlit
+# treats it as a new widget and resets any previously selected files.
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+
 # Load prebuilt corpora (priority: rag_store > rag_store_cluster3)
 if "stores" not in st.session_state:
     primary = load_json_list("rag_store.json") or load_json_list("rag_store.json.gz")
@@ -465,7 +470,8 @@ uploads = st.file_uploader(
     "Drop files here (pdf, csv, xlsx, xls, docx, txt) — multiple allowed",
     type=["pdf", "csv", "xlsx", "xls", "docx", "txt"],
     accept_multiple_files=True,
-    key="uploader_docs",
+    # Use a dynamic key to force a fresh widget when documents are cleared.
+    key=f"uploader_docs_{st.session_state.uploader_key}",
 )
 
 if st.button("Clear documents", key="btn_clear_docs_top"):
@@ -473,10 +479,11 @@ if st.button("Clear documents", key="btn_clear_docs_top"):
     # Preserve authentication and, optionally, preloaded stores. Anything else should be reset.
     auth_state = st.session_state.get("auth", None)
     stores_state = st.session_state.get("stores", None)
+    uploader_key = st.session_state.get("uploader_key", 0)
     # Remove all session keys other than auth and stores. This clears chat, docs, file uploaders,
     # toggles, dataframes, and any other widget state so the UI looks freshly loaded.
     for _key in list(st.session_state.keys()):
-        if _key not in {"auth", "stores"}:
+        if _key not in {"auth", "stores", "uploader_key"}:
             try:
                 del st.session_state[_key]
             except Exception:
@@ -487,6 +494,8 @@ if st.button("Clear documents", key="btn_clear_docs_top"):
         st.session_state.auth = auth_state
     if stores_state is not None:
         st.session_state.stores = stores_state
+    # Ensure the uploader key is restored and incremented to force a new widget on next run.
+    st.session_state.uploader_key = uploader_key + 1
     # Ensure core collections exist but empty
     st.session_state.messages = []
     st.session_state.docs = []
