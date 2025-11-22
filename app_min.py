@@ -186,44 +186,6 @@ HAS_DOCX = has_pkg("docx")  # python-docx
 HAS_OPENPYXL = has_pkg("openpyxl")
 HAS_XLRD = has_pkg("xlrd")
 
-# Optional OCR deps detection (PyMuPDF and EasyOCR)
-HAS_PYMUPDF = has_pkg("fitz")
-HAS_EASYOCR = has_pkg("easyocr")
-
-# Initialize an OCR reader if easyocr is available. This reader will be lazily
-# constructed; if creation fails, OCR_READER will remain None.
-OCR_READER = None
-if HAS_EASYOCR:
-    try:
-        import easyocr  # type: ignore
-        # Use English by default; GPU disabled for compatibility
-        OCR_READER = easyocr.Reader(["en"], gpu=False)
-    except Exception:
-        OCR_READER = None
-
-def ocr_pdf_bytes(pdf_bytes: bytes) -> Tuple[str, List[str]]:
-    """Perform OCR on a PDF given as bytes. Returns (full_text, list_of_page_texts)."""
-    if not (HAS_PYMUPDF and OCR_READER):
-        return "", []
-    import fitz  # type: ignore
-    from PIL import Image  # to ensure pixmap conversion is supported
-
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    page_texts: List[str] = []
-    for page in doc:
-        # Render page to an image (PNG) at moderate DPI for OCR
-        pix = page.get_pixmap(dpi=200)
-        # Convert pixmap to bytes
-        img_bytes = pix.tobytes("png")
-        # Use easyocr to extract text; detail=0 returns just the text strings
-        try:
-            lines = OCR_READER.readtext(img_bytes, detail=0) if OCR_READER else []
-        except Exception:
-            lines = []
-        page_texts.append("\n".join(lines))
-    full_text = "\n\n".join(page_texts).strip()
-    return full_text, page_texts
-
 # ------------------------
 # Minimal model call
 # ------------------------
@@ -383,90 +345,45 @@ def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
             return normalize_text(text), f"{name} (DOCX paragraphs: {len(doc.paragraphs)})", {"type": "docx"}
 
         if suffix in {"pdf"}:
-            # Read the entire PDF into memory so we can reuse it for multiple extraction attempts.
-            raw = file.read()
-
-            # 1) Attempt extraction with pypdf if available
+            # Try using pypdf if available
             if HAS_PYPDF:
-                try:
-                    from pypdf import PdfReader  # type: ignore
-                    bio = io.BytesIO(raw)
-                    reader = PdfReader(bio)
-                    pages: List[str] = []
-                    for page in reader.pages:
-                        try:
-                            pages.append(page.extract_text() or "")
-                        except Exception:
-                            pages.append("")
-                    text = "\n".join(pages).strip()
-                    if text:
-                        return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})", {"type": "pdf", "pages": pages}
-                except Exception:
-                    pass
-
-            # 2) Fallback: OCR using PyMuPDF + EasyOCR if available
-            if OCR_READER and HAS_PYMUPDF:
-                try:
-                    ocr_text, ocr_pages = ocr_pdf_bytes(raw)
-                    if ocr_text:
-                        info = f"{name} (PDF pages: {len(ocr_pages)}, OCR)"
-                        return normalize_text(ocr_text), info, {"type": "pdf_ocr", "pages": ocr_pages}
-                except Exception:
-                    pass
-
-            # 3) Final fallback: attempt extraction via the pdftotext command. This utility
-            # converts each page of the PDF into text. If pdftotext is not installed
-            # or the command fails (e.g. the file is image-only), this block will
-            # gracefully fall through to return an error message below.
+                from pypdf import PdfReader  # type: ignore
+                bio = io.BytesIO(file.read())
+                reader = PdfReader(bio)
+                pages: List[str] = []
+                for page in reader.pages:
+                    try:
+                        pages.append(page.extract_text() or "")
+                    except Exception:
+                        pages.append("")
+                text = "\n".join(pages)
+                return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})", {"type": "pdf", "pages": pages}
+            # Fallback: attempt extraction via the pdftotext command if available
             try:
-                import subprocess
-                import tempfile
+                import tempfile, subprocess, os
+                # Read the file bytes and write to a temporary PDF
+                data = file.read()
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
-                    tmp_pdf.write(raw)
+                    tmp_pdf.write(data)
                     tmp_pdf.flush()
-                    pdf_path = tmp_pdf.name
+                # Prepare a temporary output file
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_txt:
-                    txt_path = tmp_txt.name
-                # Attempt to run pdftotext; if the command is missing, a FileNotFoundError
-                # will be raised. Capture stdout/stderr but do not emit them.
-                try:
-                    subprocess.run([
-                        "pdftotext",
-                        pdf_path,
-                        txt_path,
-                    ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                except FileNotFoundError:
-                    # pdftotext isn't installed in this environment
-                    raise RuntimeError("pdftotext command not found")
-                # Read the generated text file
-                with open(txt_path, "r", encoding="utf-8", errors="ignore") as fin:
+                    tmp_txt_path = tmp_txt.name
+                # Run pdftotext to extract all pages into a text file
+                subprocess.run(["pdftotext", tmp_pdf.name, tmp_txt_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                with open(tmp_txt_path, "r", encoding="utf-8", errors="ignore") as fin:
                     text = fin.read()
                 # Clean up temporary files
-                try:
-                    os.unlink(pdf_path)
-                except Exception:
-                    pass
-                try:
-                    os.unlink(txt_path)
-                except Exception:
-                    pass
+                os.unlink(tmp_pdf.name)
+                os.unlink(tmp_txt_path)
                 if text:
-                    # Split by form feed to separate pages
-                    pages = text.split("\f")
+                    pages = text.split("\f")  # page break form-feed
                     cleaned = normalize_text(text)
                     return cleaned, f"{name} (PDF pages: {len(pages)})", {"type": "pdf", "pages": pages}
             except Exception:
-                # Fall through to error message below
+                # If pdftotext is unavailable or fails, skip the PDF
                 pass
-
-            # If all methods fail, return an informative error message. Suggest installing
-            # optional dependencies for OCR or ensuring the PDF contains selectable text.
-            return "", (
-                f"{name} (PDF) could not be parsed. The file may be image-based or the "
-                "required dependencies are missing. Install 'pypdf' for basic extraction "
-                "and 'pymupdf'+'easyocr' for OCR-based extraction, or ensure 'pdftotext' "
-                "is available."
-            ), {"type": "pdf_error"}
+            return "", f"{name} (PDF) could not be parsed. Install 'pypdf' or ensure 'pdftotext' is available.", {"type": "pdf_error"}
 
         return "", f"{name}: unsupported file type '{suffix}'.", {"type": "unsupported"}
 
