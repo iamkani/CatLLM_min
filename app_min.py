@@ -345,19 +345,45 @@ def extract_text_from_upload(file) -> Tuple[str, str, Dict]:
             return normalize_text(text), f"{name} (DOCX paragraphs: {len(doc.paragraphs)})", {"type": "docx"}
 
         if suffix in {"pdf"}:
-            if not HAS_PYPDF:
-                return "", f"{name} (PDF) requires 'pypdf' to extract text.", {"type": "pdf_error"}
-            from pypdf import PdfReader  # type: ignore
-            bio = io.BytesIO(file.read())
-            reader = PdfReader(bio)
-            pages: List[str] = []
-            for page in reader.pages:
-                try:
-                    pages.append(page.extract_text() or "")
-                except Exception:
-                    pages.append("")
-            text = "\n".join(pages)
-            return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})", {"type": "pdf", "pages": pages}
+            # Try using pypdf if available
+            if HAS_PYPDF:
+                from pypdf import PdfReader  # type: ignore
+                bio = io.BytesIO(file.read())
+                reader = PdfReader(bio)
+                pages: List[str] = []
+                for page in reader.pages:
+                    try:
+                        pages.append(page.extract_text() or "")
+                    except Exception:
+                        pages.append("")
+                text = "\n".join(pages)
+                return normalize_text(text), f"{name} (PDF pages: {len(reader.pages)})", {"type": "pdf", "pages": pages}
+            # Fallback: attempt extraction via the pdftotext command if available
+            try:
+                import tempfile, subprocess, os
+                # Read the file bytes and write to a temporary PDF
+                data = file.read()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
+                    tmp_pdf.write(data)
+                    tmp_pdf.flush()
+                # Prepare a temporary output file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_txt:
+                    tmp_txt_path = tmp_txt.name
+                # Run pdftotext to extract all pages into a text file
+                subprocess.run(["pdftotext", tmp_pdf.name, tmp_txt_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                with open(tmp_txt_path, "r", encoding="utf-8", errors="ignore") as fin:
+                    text = fin.read()
+                # Clean up temporary files
+                os.unlink(tmp_pdf.name)
+                os.unlink(tmp_txt_path)
+                if text:
+                    pages = text.split("\f")  # page break form-feed
+                    cleaned = normalize_text(text)
+                    return cleaned, f"{name} (PDF pages: {len(pages)})", {"type": "pdf", "pages": pages}
+            except Exception:
+                # If pdftotext is unavailable or fails, skip the PDF
+                pass
+            return "", f"{name} (PDF) could not be parsed. Install 'pypdf' or ensure 'pdftotext' is available.", {"type": "pdf_error"}
 
         return "", f"{name}: unsupported file type '{suffix}'.", {"type": "unsupported"}
 
