@@ -513,6 +513,10 @@ if uploads:
         if len(st.session_state.docs) >= max_docs:
             st.warning(f"Maximum of {max_docs} documents can be uploaded at once. Additional files were skipped.")
             break
+        # Skip duplicate uploads by filename
+        if any(d.get("name") == f.name for d in st.session_state.docs):
+            st.warning(f"Duplicate document '{f.name}' was skipped.")
+            continue
         text, info, meta = extract_text_from_upload(f)
         if text:
             chunks = build_source_marked_chunks(f.name, meta, text)
@@ -563,7 +567,13 @@ if st.session_state.docs:
     if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
         """Create a summary for each uploaded document. When two documents are present, both are summarized."""
         summary_parts: List[str] = []
+        # Deduplicate documents by filename to avoid summarizing the same document twice.
+        unique_docs: Dict[str, Dict] = {}
         for d in st.session_state.docs:
+            # If two docs share the same name, only keep the first instance.
+            if d["name"] not in unique_docs:
+                unique_docs[d["name"]] = d
+        for d in unique_docs.values():
             # Use a reasonable excerpt of each document for the summary prompt. If the document is short,
             # use it in its entirety; otherwise, take the first 1800 characters.
             sample = d["text"][:1800]
