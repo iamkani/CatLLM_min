@@ -561,41 +561,48 @@ if st.session_state.docs:
     if "summary_placeholder" not in st.session_state:
         st.session_state.summary_placeholder = st.empty()
     if st.button("🧠 Summarize loaded documents", key="summarize_btn"):
-        context: List[str] = []
+        """Create a summary for each uploaded document. When two documents are present, both are summarized."""
+        summary_parts: List[str] = []
         for d in st.session_state.docs:
-            sample = d["text"][:1500]
+            # Use a reasonable excerpt of each document for the summary prompt. If the document is short,
+            # use it in its entirety; otherwise, take the first 1800 characters.
+            sample = d["text"][:1800]
             meta_info = d["meta"]
-            context.append(f"{d['name']} — {meta_info}\n{sample}")
-        # Generate the summary text either using the OpenAI API or a local heuristic.
-        summary_md = ""
-        if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
-            try:
-                from openai import OpenAI  # type: ignore
-                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                prompt = (
-                    "Summarize the following documents in bullet points. Keep it concise and group by filename. "
-                    "Quote key lines with [source markers].\n\n"
-                    + "\n\n---\n\n".join(context)
-                )
-                resp = client.chat.completions.create(
-                    model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
-                    messages=[
-                        {"role": "system", "content": "You are a concise technical summarizer."},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.2,
-                )
-                summary_md = resp.choices[0].message.content or "(no content)"
-            except Exception as e:
-                st.error(f"Model summary failed, falling back to local: {e}")
-        # Fall back to a local summary if no OpenAI API or on error.
-        if not summary_md:
-            agg = "### Local summary\n"
-            for d in st.session_state.docs:
+            this_summary = ""
+            if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
+                try:
+                    from openai import OpenAI  # type: ignore
+                    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                    prompt = (
+                        "Summarize the following document in concise bullet points. "
+                        "Quote key lines with [source markers].\n\n"
+                        f"Document: {d['name']} — {meta_info}\n\n{sample}"
+                    )
+                    resp = client.chat.completions.create(
+                        model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
+                        messages=[
+                            {"role": "system", "content": "You are a concise technical summarizer."},
+                            {"role": "user", "content": prompt},
+                        ],
+                        temperature=0.2,
+                    )
+                    this_summary = resp.choices[0].message.content or ""
+                except Exception as e:
+                    st.error(f"Model summary failed for {d['name']}, falling back to local: {e}")
+            if not this_summary:
+                # Local heuristic summary for this document
                 toks = tokenize(d["text"])
                 common_terms = ", ".join(w for w, _ in Counter(toks).most_common(10))
-                agg += f"- **{d['name']}**: {len(d['text'])} chars; top terms: {common_terms}\n"
-            summary_md = agg
+                this_summary = (
+                    f"### {d['name']}\n"
+                    f"- {len(d['text'])} chars; top terms: {common_terms}\n"
+                )
+            else:
+                # Prepend the document name as a header when using the model-generated summary.
+                this_summary = f"### {d['name']}\n" + this_summary
+            summary_parts.append(this_summary)
+        # Concatenate summaries for all documents
+        summary_md = "\n\n".join(summary_parts)
         # Clear any previous summary and render the new one.
         placeholder = st.session_state.summary_placeholder
         placeholder.empty()
